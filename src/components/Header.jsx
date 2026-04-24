@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Search, Globe, Truck, Heart, ShoppingCart, Phone, Menu, X, ChevronRight, LogOut } from 'lucide-react';
 import { useLanguage } from '../i18n/LanguageContext';
+import { useAuth } from '../contexts/AuthContext';
 import LoginModal from './LoginModal';
-import axios from 'axios';
+import BrandsDropdown from './BrandsDropdown';
+import CategoriesDropdown from './CategoriesDropdown';
+import Navbar from './Navbar';
 
-const API_URL = 'http://localhost:5000/api/auth';
-
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 // Helper: get initials from a name
 const getInitials = (name = '') => {
   const parts = name.trim().split(' ');
@@ -35,63 +37,53 @@ const UserAvatar = ({ user, size = 'md' }) => {
   );
 };
 
+const categoryIds = {
+  all: 'all',
+  cropProtection: 'crop-protection',
+  cropNutrition: 'crop-nutrition',
+  equipments: 'equipments',
+  organic: 'organic',
+};
+
 const Header = () => {
   const { language, toggleLanguage, t } = useLanguage();
+  const { user, isLoading: authLoading, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-  const [user, setUser] = useState(null);
+  const [isBrandsDropdownOpen, setIsBrandsDropdownOpen] = useState(false);
+  const [isCategoriesDropdownOpen, setIsCategoriesDropdownOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [activeBrand, setActiveBrand] = useState(null);
 
-  // On mount: check localStorage and silently verify the JWT with /api/me
+  const brandsDropdownRef = useRef(null);
+
   useEffect(() => {
-    const savedUser = localStorage.getItem('agri_user');
-    const token = localStorage.getItem('agri_token');
+    const path = window.location.pathname;
+    const match = path.match(/^\/brand\/(.+)$/);
+    if (match) {
+      setActiveBrand(match[1]);
+      setIsBrandsDropdownOpen(true);
+      localStorage.setItem('agri_active_brand', match[1]);
+    }
+  }, []);
 
-    if (savedUser && token) {
-      // Optimistically set user from cache, then verify with server
-      setUser(JSON.parse(savedUser));
-
-      // Skip verification for mock Google tokens (no real backend for those)
-      if (!token.startsWith('google_token_')) {
-        axios.get(`${API_URL}/me`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }).then((res) => {
-          // Update with fresh data from server
-          const freshUser = res.data.data.user;
-          setUser(freshUser);
-          localStorage.setItem('agri_user', JSON.stringify(freshUser));
-        }).catch(() => {
-          // Token is invalid/expired — clear auth state
-          localStorage.removeItem('agri_token');
-          localStorage.removeItem('agri_user');
-          setUser(null);
-        });
-      }
+  useEffect(() => {
+    const savedBrand = localStorage.getItem('agri_active_brand');
+    if (savedBrand && !window.location.pathname.match(/^\/brand\//)) {
+      setActiveBrand(savedBrand);
     }
   }, []);
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
-  const handleLoginSuccess = (userData) => setUser(userData);
+  const handleLoginSuccess = (userData) => {};
 
   const handleLogout = async () => {
-    const token = localStorage.getItem('agri_token');
-    try {
-      if (token && !token.startsWith('google_token_')) {
-        await axios.post(`${API_URL}/logout`, {}, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-      }
-    } catch {
-      // Ignore errors — we always clear client-side regardless
-    } finally {
-      localStorage.removeItem('agri_token');
-      localStorage.removeItem('agri_user');
-      setUser(null);
-    }
+    await logout('/');
   };
 
   return (
-    <header className="relative w-full bg-white shadow-sm border-b border-gray-100 flex flex-col pt-0 z-50">
+    <header className="relative w-full bg-white shadow-sm border-b border-gray-100 flex flex-col pt-0 z-[100]">
       {/* Top Strip */}
       <div className="bg-agri-dark text-white text-[10px] sm:text-xs py-1.5 px-4 flex justify-between items-center sm:px-6 lg:px-8">
         <div className="flex space-x-3 sm:space-x-4">
@@ -246,23 +238,29 @@ const Header = () => {
         </div>
       </div>
 
-      {/* Desktop Navbar */}
-      <nav className="border-t border-gray-100 bg-white hidden lg:block">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <ul className="flex items-center space-x-8 py-3 text-[13px] font-bold text-gray-700 whitespace-nowrap uppercase tracking-wide overflow-x-auto no-scrollbar">
-            <li className="flex items-center text-agri-green cursor-pointer hover:text-agri-dark transition-colors"><Menu size={18} className="mr-2" /> {t('nav_all')}</li>
-            <li className="hover:text-agri-green cursor-pointer transition-colors">{t('nav_brands')}</li>
-            <li className="hover:text-agri-green cursor-pointer transition-colors">{t('nav_seeds')}</li>
-            <li className="hover:text-agri-green cursor-pointer transition-colors">{t('nav_crop_prot')}</li>
-            <li className="hover:text-agri-green cursor-pointer transition-colors">{t('nav_crop_nutri')}</li>
-            <li className="hover:text-agri-green cursor-pointer transition-colors">{t('nav_equip')}</li>
-            <li className="hover:text-agri-green cursor-pointer transition-colors">{t('nav_animal')}</li>
-            <li className="hover:text-agri-green cursor-pointer transition-colors">{t('nav_organic')}</li>
-            <li className="hover:text-agri-green cursor-pointer transition-colors">{t('nav_services')}</li>
-            <li className="hover:text-agri-green cursor-pointer transition-colors">{t('nav_blogs')}</li>
-          </ul>
-        </div>
-      </nav>
+      <Navbar />
+
+      {/* Brands Mega Menu - Desktop */}
+      <div className="hidden lg:block">
+        <BrandsDropdown 
+          isOpen={isBrandsDropdownOpen} 
+          onClose={() => setIsBrandsDropdownOpen(false)}
+          activeBrand={activeBrand}
+          onBrandSelect={(slug) => {
+            setActiveBrand(slug);
+            localStorage.setItem('agri_active_brand', slug);
+          }}
+        />
+      </div>
+
+      {/* Categories Mega Menu - Desktop */}
+      <div className="hidden lg:block">
+        <CategoriesDropdown 
+          isOpen={isCategoriesDropdownOpen} 
+          onClose={() => { setIsCategoriesDropdownOpen(false); setSelectedCategory(null); }}
+          selectedCategory={selectedCategory}
+        />
+      </div>
 
       {/* Mobile Overlay */}
       {isMenuOpen && (
@@ -272,9 +270,12 @@ const Header = () => {
       {/* Mobile Drawer */}
       <div className={`fixed top-0 left-0 bottom-0 w-[280px] bg-white z-[60] lg:hidden transform transition-transform duration-300 ease-in-out shadow-2xl flex flex-col ${isMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-agri-green text-white">
-          <div className="flex items-center space-x-2">
-            <img src="/logo.png.jpeg" alt="Logo" className="w-8 h-8 bg-white p-0.5 rounded-md" />
-            <span className="font-bold">Gawande Krushi</span>
+          <div className="flex items-center space-x-2 min-w-0">
+            <img src="/logo.png.jpeg" alt="Logo" className="w-8 h-8 bg-white p-0.5 rounded-md flex-shrink-0" />
+            <div className="min-w-0">
+              <span className="text-sm font-semibold leading-tight block break-words max-w-[140px]">Gawande Krushi Kendra</span>
+              <span className="text-xs text-gray-200">Since 2006</span>
+            </div>
           </div>
           <button onClick={toggleMenu} className="p-1 hover:bg-white/10 rounded-full">
             <X size={24} />
@@ -294,7 +295,14 @@ const Header = () => {
 
           <div className="px-4 py-3 text-xs font-bold text-gray-400 uppercase tracking-wider">{t('nav_all')}</div>
           <ul className="text-sm font-semibold text-gray-700">
-            {[t('nav_brands'), t('nav_seeds'), t('nav_crop_prot'), t('nav_crop_nutri'), t('nav_equip'), t('nav_animal'), t('nav_organic')].map((label) => (
+            <li 
+              onClick={() => { setIsBrandsDropdownOpen(true); setIsMenuOpen(false); }}
+              className="flex items-center justify-between px-4 py-3 hover:bg-agri-light hover:text-agri-green cursor-pointer transition-colors border-l-4 border-transparent hover:border-agri-green text-agri-green"
+            >
+              <span>{t('nav_brands')}</span>
+              <ChevronRight size={16} className="text-gray-300" />
+            </li>
+            {[t('nav_seeds'), t('nav_crop_prot'), t('nav_crop_nutri'), t('nav_equip'), t('nav_organic')].map((label) => (
               <li key={label} className="flex items-center justify-between px-4 py-3 hover:bg-agri-light hover:text-agri-green cursor-pointer transition-colors border-l-4 border-transparent hover:border-agri-green">
                 <span>{label}</span>
                 <ChevronRight size={16} className="text-gray-300" />
@@ -359,6 +367,23 @@ const Header = () => {
         onClose={() => setIsLoginModalOpen(false)}
         onLoginSuccess={handleLoginSuccess}
       />
+
+      {/* Brands Mega Menu - Mobile */}
+      <div className="lg:hidden">
+        <BrandsDropdown 
+          isOpen={isBrandsDropdownOpen} 
+          onClose={() => setIsBrandsDropdownOpen(false)} 
+        />
+      </div>
+
+      {/* Categories Mega Menu - Mobile */}
+      <div className="lg:hidden">
+        <CategoriesDropdown 
+          isOpen={isCategoriesDropdownOpen} 
+          onClose={() => { setIsCategoriesDropdownOpen(false); setSelectedCategory(null); }}
+          selectedCategory={selectedCategory}
+        />
+      </div>
     </header>
   );
 };

@@ -1,13 +1,19 @@
 import React from 'react';
 import { useLanguage } from '../i18n/LanguageContext';
+import seedsImg from '../assets/seeds.png';
+import fertImg from '../assets/fertilizer.png';
+import pestImg from '../assets/pesticides.png';
+import toolsImg from '../assets/tools.png';
+import organicImg from '../assets/organic.png';
+import irrigationImg from '../assets/irrigation.png';
 
 const categories = [
-  { id: 1, tKey: 'cat_seeds', image: 'https://images.unsplash.com/photo-1464226184884-fa280b87c399?auto=format&fit=crop&q=80&w=300' },
-  { id: 2, tKey: 'cat_fert', image: 'https://images.unsplash.com/photo-1585336261022-680e295ce3fe?auto=format&fit=crop&q=80&w=300' },
-  { id: 3, tKey: 'cat_pest', image: 'https://images.unsplash.com/photo-1576678927484-cc907957088c?auto=format&fit=crop&q=80&w=300' },
-  { id: 4, tKey: 'cat_tools', image: 'https://images.unsplash.com/photo-1572981779307-38b8cabb2407?auto=format&fit=crop&q=80&w=300' },
-  { id: 5, tKey: 'cat_org', image: 'https://images.unsplash.com/photo-1544985361-b420d7a77043?auto=format&fit=crop&q=80&w=300' },
-  { id: 6, tKey: 'cat_irri', image: 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?auto=format&fit=crop&q=80&w=300' },
+  { id: 1, tKey: 'cat_seeds', image: seedsImg },
+  { id: 2, tKey: 'cat_fert', image: fertImg },
+  { id: 3, tKey: 'cat_pest', image: pestImg },
+  { id: 4, tKey: 'cat_tools', image: toolsImg },
+  { id: 5, tKey: 'cat_org', image: organicImg },
+  { id: 6, tKey: 'cat_irri', image: irrigationImg },
 ];
 
 const CategoriesSection = () => {
@@ -25,10 +31,10 @@ const CategoriesSection = () => {
                 <img 
                   src={cat.image} 
                   alt={t(cat.tKey)} 
-                  className="w-full h-full object-cover rounded-full group-hover:scale-110 transition-transform duration-300"
+                  className="w-full h-full object-contain rounded-full group-hover:scale-110 transition-transform duration-300"
                 />
               </div>
-              <span className="font-semibold text-gray-700 group-hover:text-agri-green transition-colors text-sm text-center">
+              <span className="font-semibold text-gray-700 group-hover:text-agri-green transition-colors text-sm text-center leading-tight max-w-full">
                 {t(cat.tKey)}
               </span>
             </div>

@@ -68,7 +68,8 @@ const userSchema = new mongoose.Schema(
     // ── Refresh Tokens (rotation with family tracking) ─────────────────────
     refreshTokens: {
       type: [String],
-      select: false,
+
+
       default: [],
     },
   },

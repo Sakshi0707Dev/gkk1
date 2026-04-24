@@ -9,7 +9,7 @@ const products = [
     price: '₹ 1,250',
     oldPrice: '₹ 1,400',
     rating: 4.8,
-    image: 'https://images.unsplash.com/photo-1464226184884-fa280b87c399?auto=format&fit=crop&q=80&w=400'
+    image: 'https://cdn.shopify.com/s/files/1/0722/2059/files/fb-maruti-hybrid-corn-seeds-file-12698.png?v=1737448291'
   },
   {
     id: 2,
@@ -17,7 +17,7 @@ const products = [
     price: '₹ 1,450',
     oldPrice: '₹ 1,600',
     rating: 4.5,
-    image: 'https://images.unsplash.com/photo-1585336261022-680e295ce3fe?auto=format&fit=crop&q=80&w=400'
+    image: 'https://5.imimg.com/data5/SELLER/Default/2024/6/431232812/WL/ZF/ZM/92588412/gromor-10-26-26-500x500.png'
   },
   {
     id: 3,
@@ -25,7 +25,7 @@ const products = [
     price: '₹ 850',
     oldPrice: '₹ 990',
     rating: 4.6,
-    image: 'https://images.unsplash.com/photo-1576678927484-cc907957088c?auto=format&fit=crop&q=80&w=400'
+    image: 'https://5.imimg.com/data5/SELLER/Default/2021/3/PJ/JI/PV/78408449/bayer-regent-sc-insecticide-1000x1000.jpg'
   },
   {
     id: 4,
@@ -33,7 +33,7 @@ const products = [
     price: '₹ 2,100',
     oldPrice: '₹ 2,350',
     rating: 4.9,
-    image: 'https://images.unsplash.com/photo-1572981779307-38b8cabb2407?auto=format&fit=crop&q=80&w=400'
+    image: 'https://cdn.shopify.com/s/files/1/0722/2059/files/amistar-top-fungicide-file-3949.jpg?v=1737470613&width=828&format=webp'
   }
 ];
 
@@ -45,7 +45,7 @@ const FeaturedProducts = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-end mb-8 border-b border-gray-100 pb-4">
           <h2 className="text-2xl font-bold text-gray-800 border-l-4 border-agri-orange pl-3">{t('feat_title')}</h2>
-          <a href="#" className="font-semibold text-agri-green text-sm hover:underline">{t('view_all')}</a>
+          <a href="#blog" className="font-semibold text-agri-green text-sm hover:underline">{t('view_all')}</a>
         </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
@@ -59,7 +59,7 @@ const FeaturedProducts = () => {
                 <img 
                   src={product.image} 
                   alt={product.name} 
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+                  className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" 
                 />
               </div>
               

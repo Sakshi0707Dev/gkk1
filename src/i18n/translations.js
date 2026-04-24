@@ -34,7 +34,7 @@ export const translations = {
     cat_seeds: 'Seeds',
     cat_fert: 'Fertilizers',
     cat_pest: 'Pesticides',
-    cat_tools: 'Tools',
+    cat_tools: 'Farming Equipment',
     cat_org: 'Organic',
     cat_irri: 'Irrigation',
 
@@ -59,7 +59,7 @@ export const translations = {
     privacy: 'Privacy Policy',
     terms_apply: '*Return Policy: Terms & Conditions apply.',
     contact_info: 'Contact Info',
-    address: 'Main Market Road, Krushi Nagar, Maharashtra 440001, India',
+    address: 'At. Post: Malkapur Pangra, Tq: Sindkhed Raja, Dist: Buldhana, Pincode: 443202',
     rights: 'Gawande Krushi Kendra. All rights reserved.',
     designed: 'Designed for Farmers'
   },
@@ -98,7 +98,7 @@ export const translations = {
     cat_seeds: 'बियाणे',
     cat_fert: 'खते',
     cat_pest: 'कीटकनाशके',
-    cat_tools: 'उपकरणे',
+    cat_tools: 'शेती उपकरणे',
     cat_org: 'सेंद्रिय',
     cat_irri: 'सिंचन',
 
@@ -123,7 +123,7 @@ export const translations = {
     privacy: 'गोपनीयता धोरण',
     terms_apply: '*परतावा धोरण: अटी आणि शर्ती लागू.',
     contact_info: 'संपर्क माहिती',
-    address: 'मुख्य बाजार रस्ता, कृषी नगर, महाराष्ट्र 440001, भारत',
+    address: 'मु. पो: मलकापूर पांग्रा, ता: सिंदखेड राजा, जि: बुलढाणा, पिनकोड: ४४३२०२',
     rights: 'गवांडे कृषी केंद्र. सर्व हक्क राखीव.',
     designed: 'शेतकऱ्यांसाठी डिझाइन केलेले'
   }

@@ -6,8 +6,18 @@ const createTransporter = () =>
     host: ENV.SMTP_HOST,
     port: ENV.SMTP_PORT,
     secure: ENV.SMTP_PORT === 465,
+    requireTLS: ENV.SMTP_PORT !== 465,
     auth: { user: ENV.SMTP_USER, pass: ENV.SMTP_PASS },
+    family: 4,
+    tls: {
+      servername: ENV.SMTP_HOST,
+    },
   });
+
+if (ENV.NODE_ENV !== 'production') {
+  console.log('[MAIL DEBUG] SMTP user loaded:', Boolean(ENV.SMTP_USER));
+  console.log('[MAIL DEBUG] SMTP host/port:', ENV.SMTP_HOST, ENV.SMTP_PORT);
+}
 
 /**
  * Send a password-reset email with a tokenised link.
@@ -34,6 +44,33 @@ export const sendPasswordResetEmail = async ({ to, name, resetURL }) => {
       </div>
     `,
   });
+};
+
+export const sendPasswordResetOTPEmail = async ({ to, name, otp }) => {
+  const transporter = createTransporter();
+  try {
+    if (ENV.NODE_ENV !== 'production') {
+      console.log('[MAIL DEBUG] Sending OTP to:', to);
+    }
+
+    await transporter.sendMail({
+      from: `"Gawande Krushi Kendra" <${ENV.EMAIL_FROM}>`,
+      to,
+      subject: 'Password Reset OTP',
+      html: `
+        <div style="font-family:sans-serif;max-width:600px;margin:auto;padding:32px;border:1px solid #e5e7eb;border-radius:12px;">
+          <h2 style="color:#1f7e44;">Password Reset OTP</h2>
+          <p>Hi <strong>${name}</strong>,</p>
+          <p>Your OTP is: <strong style="font-size:24px;letter-spacing:4px;">${otp}</strong></p>
+          <p>This OTP is valid for <strong>5 minutes</strong>.</p>
+        </div>
+      `,
+      text: `Your OTP is: ${otp} (valid for 5 minutes)`,
+    });
+  } catch (error) {
+    console.error('[MAIL ERROR] Failed to send OTP email:', error);
+    throw error;
+  }
 };
 
 /**

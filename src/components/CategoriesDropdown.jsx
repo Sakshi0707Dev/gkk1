@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { 
   Bug, 
   Leaf, 
@@ -12,13 +13,14 @@ import {
 
 const categories = [
   {
-    id: 'crop-protection',
-    name: 'Crop Protection',
+    id: 'seeds',
+    name: 'Seeds',
     icon: Bug,
     subcategories: [
-      { id: 'insecticides', name: 'Insecticides', slug: 'crop-protection/insecticides' },
-      { id: 'pesticides', name: 'Pesticides', slug: 'crop-protection/pesticides' },
-      { id: 'fungicides', name: 'Fungicides', slug: 'crop-protection/fungicides' },
+      { id: 'vegetable-seeds', name: 'Vegetable Seeds', slug: 'category/vegetable-seeds' },
+      { id: 'fruit-seeds', name: 'Fruit Seeds', slug: 'category/fruit-seeds' },
+      { id: 'flower-seeds', name: 'Flower Seeds', slug: 'category/flower-seeds' },
+      { id: 'herbs', name: 'Herbs', slug: 'category/herbs' },
     ]
   },
   {
@@ -100,11 +102,6 @@ const CategoriesDropdown = ({ isOpen, onClose, selectedCategory }) => {
     };
   }, [isOpen, onClose]);
 
-  const handleCategoryClick = (slug) => {
-    window.location.href = `/${slug}`;
-    onClose();
-  };
-
   if (!isOpen) return (
     <div className="hidden">
       <div ref={dropdownRef} />
@@ -162,14 +159,15 @@ const CategoriesDropdown = ({ isOpen, onClose, selectedCategory }) => {
                 <div className={`overflow-hidden transition-all duration-300 ${expandedCategory === category.id ? 'max-h-[500px]' : 'max-h-0'}`}>
                   <div className="px-4 pb-4 space-y-2">
                     {category.subcategories.map((sub) => (
-                      <button
+                      <Link
                         key={sub.id}
-                        onClick={() => handleCategoryClick(sub.slug)}
+                        to={`/${sub.slug}`}
+                        onClick={onClose}
                         className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-agri-green/5 transition-colors text-left"
                       >
                         <CircleDot size={12} className="text-green-500" />
                         <span className="text-sm text-gray-600 font-medium">{sub.name}</span>
-                      </button>
+                      </Link>
                     ))}
                   </div>
                 </div>
@@ -179,9 +177,7 @@ const CategoriesDropdown = ({ isOpen, onClose, selectedCategory }) => {
 
           {/* Desktop Mega Menu */}
           <div className="hidden lg:grid gap-0 p-0">
-            {filteredCategories
-              .filter(cat => !selectedCategory || selectedCategory === 'all' || cat.id === selectedCategory)
-              .map((category) => {
+            {filteredCategories.map((category) => {
               const Icon = category.icon;
               return (
                 <div 
@@ -199,15 +195,16 @@ const CategoriesDropdown = ({ isOpen, onClose, selectedCategory }) => {
                   <ul className="space-y-1">
                     {category.subcategories.map((sub) => (
                       <li key={sub.id}>
-                        <button
-                          onClick={() => handleCategoryClick(sub.slug)}
+                        <Link
+                          to={`/${sub.slug}`}
+                          onClick={onClose}
                           className="w-full flex items-center gap-2 px-2 py-2 rounded-lg text-left hover:bg-agri-green/10 hover:text-agri-green transition-all group"
                         >
                           <span className="w-1.5 h-1.5 bg-gray-300 rounded-full group-hover:bg-agri-green transition-colors" />
                           <span className="text-sm text-gray-600 group-hover:text-agri-green font-medium">
                             {sub.name}
                           </span>
-                        </button>
+                        </Link>
                       </li>
                     ))}
                   </ul>

@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import passport from 'passport';
 import { rateLimit } from 'express-rate-limit';
 
 import {
@@ -12,6 +13,9 @@ import {
   resetPassword,
   sendOTP,
   verifyOTP,
+  resetPasswordWithOtp,
+  setPassword,
+  googleOAuthCallback,
 } from '../controllers/auth.controller.js';
 
 import { protect } from '../middleware/auth.middleware.js';
@@ -24,6 +28,8 @@ import {
   googleValidator,
   sendOTPValidator,
   verifyOTPValidator,
+  resetPasswordWithOtpValidator,
+  setPasswordValidator,
 } from '../validators/auth.validators.js';
 
 const router = Router();
@@ -53,8 +59,15 @@ const otpLimit = rateLimit({
 router.post('/register',      authLimit, registerValidator,   register);
 router.post('/login',         authLimit, loginValidator,      login);
 router.post('/google',        authLimit, googleValidator,     googleAuth);
+router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+router.get(
+  '/google/callback',
+  passport.authenticate('google', { session: true, failureRedirect: `${process.env.CLIENT_URL || 'http://localhost:5173'}/login-success?error=google_auth_failed` }),
+  googleOAuthCallback
+);
 router.post('/refresh-token',           refreshToken);
 router.post('/forgot-password',         forgotValidator,      forgotPassword);
+router.post('/reset-password',          resetPasswordWithOtpValidator, resetPasswordWithOtp);
 router.post('/reset-password/:token',   resetValidator,       resetPassword);
 router.post('/send-otp',      otpLimit,  sendOTPValidator,    sendOTP);
 router.post('/verify-otp',    authLimit, verifyOTPValidator,  verifyOTP);
@@ -62,5 +75,6 @@ router.post('/verify-otp',    authLimit, verifyOTPValidator,  verifyOTP);
 // ─── Protected Routes ─────────────────────────────────────────────────────────
 router.get ('/me',     protect, getMe);
 router.post('/logout', protect, logout);
+router.post('/set-password', protect, setPasswordValidator, setPassword);
 
 export default router;

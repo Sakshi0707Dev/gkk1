@@ -7,7 +7,11 @@ import {
   clearRefreshCookie,
 } from '../utils/jwt.utils.js';
 import { generateResetToken, hashToken, generateOTP } from '../utils/crypto.utils.js';
-import { sendPasswordResetEmail, sendWelcomeEmail } from '../services/email.service.js';
+import {
+  sendPasswordResetEmail,
+  sendPasswordResetOTPEmail,
+  sendWelcomeEmail,
+} from '../services/email.service.js';
 import { sendOTPviaSMS } from '../services/otp.service.js';
 import { verifyGoogleToken } from '../services/google.service.js';
 import { ENV } from '../config/env.js';
@@ -28,7 +32,9 @@ const sendTokenResponse = (res, user, statusCode = 200) => {
   res.status(statusCode).json({
     success: true,
     message: statusCode === 201 ? 'Account created successfully.' : 'Logged in successfully.',
+    token: accessToken,
     data: {
+      token: accessToken,
       accessToken,
       user: user.toPublic(),
     },
@@ -163,7 +169,7 @@ export const refreshToken = asyncHandler(async (req, res) => {
 export const forgotPassword = asyncHandler(async (req, res) => {
   const { email } = req.body;
 
-  const user = await User.findOne({ email: email.toLowerCase() });
+  const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
 
   // Always respond identically — prevents email enumeration
   const genericResponse = () =>
@@ -232,7 +238,34 @@ export const resetPassword = asyncHandler(async (req, res) => {
 
 // ─── POST /api/auth/send-otp ──────────────────────────────────────────────────
 export const sendOTP = asyncHandler(async (req, res) => {
-  const { phone } = req.body;
+  const { phone, email } = req.body;
+
+  if (email) {
+    const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
+    if (!user) throw new AppError('No account found with that email address.', 404);
+
+    const otp = generateOTP();
+    const otpHash = hashToken(otp);
+
+    if (ENV.NODE_ENV !== 'production') {
+      console.log('[AUTH DEBUG] Preparing password reset OTP for:', user.email);
+    }
+
+    user.passwordResetOtp = {
+      code: otpHash,
+      expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+      verified: false,
+    };
+    await user.save({ validateBeforeSave: false });
+
+    await sendPasswordResetOTPEmail({ to: user.email, name: user.name, otp });
+
+    return res.json({
+      success: true,
+      message: 'OTP sent to your email.',
+      data: null,
+    });
+  }
 
   // Find user by phone or the authenticated user (if logged in)
   const userId = req.user?._id;
@@ -262,7 +295,35 @@ export const sendOTP = asyncHandler(async (req, res) => {
 
 // ─── POST /api/auth/verify-otp ────────────────────────────────────────────────
 export const verifyOTP = asyncHandler(async (req, res) => {
-  const { phone, otp } = req.body;
+  const { phone, email, otp } = req.body;
+
+  if (email) {
+    const user = await User.findOne({ email: email.toLowerCase() })
+      .select('+passwordResetOtp.code +passwordResetOtp.expiresAt +passwordResetOtp.verified');
+    if (!user) throw new AppError('No account found with that email address.', 404);
+
+    if (!user.passwordResetOtp?.code || !user.passwordResetOtp?.expiresAt) {
+      throw new AppError('No OTP was requested for this email.', 400);
+    }
+
+    if (new Date() > user.passwordResetOtp.expiresAt) {
+      throw new AppError('OTP has expired. Please request a new one.', 400);
+    }
+
+    const hashedInput = hashToken(otp);
+    if (hashedInput !== user.passwordResetOtp.code) {
+      throw new AppError('Invalid OTP. Please try again.', 400);
+    }
+
+    user.passwordResetOtp.verified = true;
+    await user.save({ validateBeforeSave: false });
+
+    return res.json({
+      success: true,
+      message: 'OTP verified successfully.',
+      data: null,
+    });
+  }
 
   const user = await User.findOne({ phone }).select('+otp.code +otp.expiresAt');
   if (!user) throw new AppError('No account found with that phone number.', 404);
@@ -286,4 +347,70 @@ export const verifyOTP = asyncHandler(async (req, res) => {
   await user.save({ validateBeforeSave: false });
 
   sendTokenResponse(res, user);
+});
+
+export const resetPasswordWithOtp = asyncHandler(async (req, res) => {
+  const { email, newPassword } = req.body;
+
+  const user = await User.findOne({ email: email.toLowerCase() })
+    .select('+passwordResetOtp.code +passwordResetOtp.expiresAt +passwordResetOtp.verified +refreshTokens');
+
+  if (!user) throw new AppError('No account found with that email address.', 404);
+  if (!user.passwordResetOtp?.verified) {
+    throw new AppError('OTP verification is required before resetting password.', 400);
+  }
+  if (!user.passwordResetOtp?.expiresAt || new Date() > user.passwordResetOtp.expiresAt) {
+    throw new AppError('OTP has expired. Please request a new one.', 400);
+  }
+
+  user.password = newPassword;
+  user.passwordResetOtp = {
+    code: undefined,
+    expiresAt: undefined,
+    verified: false,
+  };
+  user.refreshTokens = [];
+  await user.save();
+
+  clearRefreshCookie(res);
+
+  res.json({
+    success: true,
+    message: 'Password set successfully. You can now login.',
+    data: null,
+  });
+});
+
+// ─── POST /api/auth/set-password ───────────────────────────────────────────────
+export const setPassword = asyncHandler(async (req, res) => {
+  const { password } = req.body;
+
+  req.user.password = password;
+  await req.user.save();
+
+  res.json({
+    success: true,
+    message: 'Password set successfully.',
+    data: { user: req.user.toPublic() },
+  });
+});
+
+// ─── GET /api/auth/google/callback ────────────────────────────────────────────
+export const googleOAuthCallback = asyncHandler(async (req, res) => {
+  const user = req.user;
+  if (!user) throw new AppError('Google authentication failed.', 401);
+
+  const { accessToken, refreshToken } = issueTokenPair(user);
+
+  await User.findByIdAndUpdate(
+    user._id,
+    { $push: { refreshTokens: refreshToken } },
+    { new: true }
+  );
+
+  setRefreshCookie(res, refreshToken);
+
+  const redirectURL =
+    `${ENV.CLIENT_URL}/login-success?token=${encodeURIComponent(accessToken)}`;
+  return res.redirect(redirectURL);
 });

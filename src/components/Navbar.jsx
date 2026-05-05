@@ -4,52 +4,52 @@ import { ChevronDown, CloudSun, BookOpen, Lightbulb, Award } from 'lucide-react'
 
 const menuItems = [
   { id: 'all', label: 'All Categories' },
-  { id: 'seeds', label: 'Seeds' },
-  { id: 'cropProtection', label: 'Crop Protection' },
-  { id: 'cropNutrition', label: 'Crop Nutrition' },
-  { id: 'equipment', label: 'Farming Equipment' },
-  { id: 'organic', label: 'Organic' },
+  { id: 'seeds', label: 'Seeds', href: '/category/seeds' },
+  { id: 'cropProtection', label: 'Crop Protection', href: '/category/crop-protection' },
+  { id: 'cropNutrition', label: 'Crop Nutrition', href: '/category/crop-nutrition' },
+  { id: 'equipment', label: 'Farming Equipment', href: '/category/equipment' },
+  { id: 'organic', label: 'Organic', href: '/category/organic' },
   { id: 'gallery', label: 'Gallery', href: '/gallery' },
   { id: 'resources', label: 'Resources' },
 ];
 
 const dropdownContent = {
   all: [
-    { label: 'Seeds', href: '/seeds' },
-    { label: 'Crop Protection', href: '/crop-protection' },
-    { label: 'Crop Nutrition', href: '/crop-nutrition' },
-    { label: 'Farming Equipment', href: '/equipment' },
-    { label: 'Organic Products', href: '/organic' },
+    { label: 'Seeds', href: '/category/seeds' },
+    { label: 'Crop Protection', href: '/category/crop-protection' },
+    { label: 'Crop Nutrition', href: '/category/crop-nutrition' },
+    { label: 'Farming Equipment', href: '/category/equipment' },
+    { label: 'Organic Products', href: '/category/organic' },
   ],
   seeds: [
-    { label: 'Vegetable Seeds', href: '/seeds/vegetable' },
-    { label: 'Fruit Seeds', href: '/seeds/fruit' },
-    { label: 'Flower Seeds', href: '/seeds/flower' },
-    { label: 'Herbs', href: '/seeds/herbs' },
+    { label: 'Vegetable Seeds', href: '/category/vegetable-seeds' },
+    { label: 'Fruit Seeds', href: '/category/fruit-seeds' },
+    { label: 'Flower Seeds', href: '/category/flower-seeds' },
+    { label: 'Herbs', href: '/category/herbs' },
   ],
   cropProtection: [
-    { label: 'Pesticides', href: '/crop-protection/pesticides' },
-    { label: 'Insecticides', href: '/crop-protection/insecticides' },
-    { label: 'Fungicides', href: '/crop-protection/fungicides' },
-    { label: 'Herbicides', href: '/crop-protection/herbicides' },
+    { label: 'Pesticides', href: '/category/crop-protection' },
+    { label: 'Insecticides', href: '/category/crop-protection' },
+    { label: 'Fungicides', href: '/category/crop-protection' },
+    { label: 'Herbicides', href: '/category/crop-protection' },
   ],
   cropNutrition: [
-    { label: 'Fertilizers', href: '/crop-nutrition/fertilizers' },
-    { label: 'Micronutrients', href: '/crop-nutrition/micronutrients' },
-    { label: 'Organic Manure', href: '/crop-nutrition/organic' },
-    { label: 'Growth Promoters', href: '/crop-nutrition/growth' },
+    { label: 'Fertilizers', href: '/category/crop-nutrition' },
+    { label: 'Micronutrients', href: '/category/crop-nutrition' },
+    { label: 'Organic Manure', href: '/category/crop-nutrition' },
+    { label: 'Growth Promoters', href: '/category/crop-nutrition' },
   ],
   equipment: [
-    { label: 'Sprayers', href: '/equipment/sprayers' },
-    { label: 'Farming Equipment', href: '/equipment/tools' },
-    { label: 'Irrigation', href: '/equipment/irrigation' },
-    { label: 'Harvesting Tools', href: '/equipment/harvesting' },
+    { label: 'Sprayers', href: '/category/equipment' },
+    { label: 'Farming Equipment', href: '/category/equipment' },
+    { label: 'Irrigation', href: '/category/equipment' },
+    { label: 'Harvesting Tools', href: '/category/equipment' },
   ],
   organic: [
-    { label: 'Organic Seeds', href: '/organic/seeds' },
-    { label: 'Organic Fertilizers', href: '/organic/fertilizers' },
-    { label: 'Organic Pesticides', href: '/organic/pesticides' },
-    { label: 'Organic Manure', href: '/organic/manure' },
+    { label: 'Organic Seeds', href: '/category/organic' },
+    { label: 'Organic Fertilizers', href: '/category/organic' },
+    { label: 'Organic Pesticides', href: '/category/organic' },
+    { label: 'Organic Manure', href: '/category/organic' },
   ],
   resources: [
     { label: 'Weather Updates', href: '/weather', icon: CloudSun },
@@ -148,7 +148,6 @@ const Navbar = () => {
                   )}
                 </div>
               )}
-
               {dropdownContent[item.id] && isDropdownOpen && activeMenu === item.id && (
                 <div 
                   className="absolute left-1/2 -translate-x-1/2 top-full mt-1 min-w-[220px] bg-white border border-gray-200 shadow-lg rounded-lg py-2 opacity-100 visible transition-all duration-300 z-50"

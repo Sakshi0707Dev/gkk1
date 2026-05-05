@@ -7,6 +7,9 @@ import User from '../models/user.model.js';
  */
 export const protect = asyncHandler(async (req, _res, next) => {
   const authHeader = req.headers.authorization;
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('[AUTH DEBUG] Authorization header:', authHeader || '(missing)');
+  }
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     throw new AppError('Authentication required. Please log in.', 401);
@@ -28,6 +31,13 @@ export const protect = asyncHandler(async (req, _res, next) => {
   if (!user) throw new AppError('User belonging to this token no longer exists.', 401);
 
   req.user = user;
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('[AUTH DEBUG] req.user:', {
+      id: req.user._id,
+      email: req.user.email,
+      role: req.user.role,
+    });
+  }
   next();
 });
 

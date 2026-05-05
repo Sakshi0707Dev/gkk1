@@ -20,34 +20,38 @@ const ExpertSupport = () => {
               {t('exp_desc')}
             </p>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:space-y-0">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* WhatsApp Support Info */}
               <a
                 href="https://wa.me/919284518038"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-3 p-3 sm:p-4 bg-gray-50 rounded-xl border border-gray-200 hover:border-[#25D366]/50 transition-all hover:bg-white hover:shadow-md group cursor-pointer no-underline"
+                className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl border border-gray-200 hover:border-[#25D366]/50 transition-all hover:bg-white hover:shadow-md group cursor-pointer no-underline h-full"
               >
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white shadow-sm rounded-full flex items-center justify-center text-[#25D366] group-hover:bg-[#25D366] group-hover:text-white transition-colors flex-shrink-0">
-                  <FaWhatsapp size={18} className="sm:w-6 sm:h-6" />
+                <div className="w-12 h-12 bg-white shadow-sm rounded-full flex items-center justify-center text-[#25D366] group-hover:bg-[#25D366] group-hover:text-white transition-colors flex-shrink-0">
+                  <FaWhatsapp size={24} />
                 </div>
-                <div className="text-left min-w-0">
-                  <p className="text-xs sm:text-sm text-gray-500 uppercase tracking-wider mb-0.5">{t('call_support')}</p>
-                  <p className="text-sm sm:text-base md:text-lg font-semibold text-gray-900">+91 92845 18038</p>
+                <div className="text-left min-w-0 flex flex-col justify-center">
+                  <p className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-widest font-bold mb-0.5">{t('call_support')}</p>
+                  <p className="text-sm sm:text-base font-bold text-gray-900 whitespace-nowrap">+91 92845 18038</p>
                 </div>
               </a>
 
               {/* Gmail Info */}
               <a
-                href="mailto:gawandekrushikendra@gmail.com"
-                className="flex items-center gap-3 p-3 sm:p-4 bg-gray-50 rounded-xl border border-gray-200 hover:border-[#EA4335]/50 transition-all hover:bg-white hover:shadow-md group cursor-pointer no-underline"
+                href="https://mail.google.com/mail/?view=cm&fs=1&to=gawandekrushikendra@gmail.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl border border-gray-200 hover:border-[#EA4335]/50 transition-all hover:bg-white hover:shadow-md group cursor-pointer no-underline h-full"
               >
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white shadow-sm rounded-full flex items-center justify-center text-[#EA4335] group-hover:bg-[#EA4335] group-hover:text-white transition-colors flex-shrink-0">
-                  <SiGmail size={16} className="sm:w-5 sm:h-5" />
+                <div className="w-12 h-12 bg-white shadow-sm rounded-full flex items-center justify-center text-[#EA4335] group-hover:bg-[#EA4335] group-hover:text-white transition-colors flex-shrink-0">
+                  <SiGmail size={20} />
                 </div>
-                <div className="text-left min-w-0">
-                  <p className="text-xs sm:text-sm text-gray-500 uppercase tracking-wider mb-0.5">{t('email_us')}</p>
-                  <p className="text-xs sm:text-sm md:text-lg font-semibold text-gray-900 break-words leading-tight">gawandekrushikendra@gmail.com</p>
+                <div className="text-left min-w-0 flex flex-col justify-center overflow-hidden">
+                  <p className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-widest font-bold mb-0.5">{t('email_us')}</p>
+                  <p className="text-[11px] sm:text-sm font-bold text-gray-900 truncate" title="gawandekrushikendra@gmail.com">
+                    gawandekrushikendra@gmail.com
+                  </p>
                 </div>
               </a>
             </div>

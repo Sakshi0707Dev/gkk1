@@ -30,7 +30,6 @@ export const translations = {
     view_categories: 'View Categories',
 
     // Categories
-    cat_title: 'Shop by Category',
     cat_seeds: 'Seeds',
     cat_fert: 'Fertilizers',
     cat_pest: 'Pesticides',
@@ -43,6 +42,7 @@ export const translations = {
     view_all: 'View All',
     sale: 'SALE',
     add: 'ADD',
+    added: 'ADDED',
 
     // Expert Support
     exp_title: 'Need Expert Farming Advice?',
@@ -94,7 +94,6 @@ export const translations = {
     view_categories: 'श्रेणी पहा',
 
     // Categories
-    cat_title: 'श्रेणीनुसार खरेदी करा',
     cat_seeds: 'बियाणे',
     cat_fert: 'खते',
     cat_pest: 'कीटकनाशके',
@@ -107,6 +106,7 @@ export const translations = {
     view_all: 'सर्व पहा',
     sale: 'सेल',
     add: 'जोडा',
+    added: 'जोडले',
 
     // Expert Support
     exp_title: 'तज्ञांच्या शेती सल्ल्याची आवश्यकता आहे?',

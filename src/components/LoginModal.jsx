@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { X, Mail, Lock, User, Eye, EyeOff, Loader2, CheckCircle2, ArrowLeft, ChevronRight } from 'lucide-react';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
-import { auth, googleProvider } from '../firebase';
-import { signInWithPopup } from 'firebase/auth';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/auth';
+const API_URL = import.meta.env.VITE_API_URL?.includes('your-backend-url.com')
+    ? 'http://localhost:5000/api/auth'
+    : (import.meta.env.VITE_API_URL || 'http://localhost:5000/api/auth');
 
 const GoogleIcon = () => (
     <svg viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg">
@@ -17,14 +17,26 @@ const GoogleIcon = () => (
 );
 
 const validateForm = (view, formData) => {
-    const { name, email, password } = formData;
+    const { name, email, password, phone, otp, newPassword, confirmPassword } = formData;
     if (view === 'register' && (!name || name.trim().length < 2)) {
         return 'Name must be at least 2 characters.';
     }
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (view === 'otp' && (!phone || !/^\+?[1-9]\d{7,14}$/.test(phone))) {
+        return 'Please enter a valid phone number with country code.';
+    }
+    if (view === 'otpVerify' && (!otp || otp.length !== 6)) {
+        return 'Please enter the 6-digit OTP.';
+    }
+    if (['setPassword', 'forgotOtp'].includes(view) && (!newPassword || newPassword.length < 6)) {
+        return 'New password must be at least 6 characters.';
+    }
+    if (view === 'forgotOtp' && newPassword !== confirmPassword) {
+        return 'Confirm password must match.';
+    }
+    if (['login', 'register', 'forgot'].includes(view) && (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))) {
         return 'Please enter a valid email address.';
     }
-    if (view !== 'forgot' && (!password || password.length < 6)) {
+    if (['login', 'register'].includes(view) && (!password || password.length < 6)) {
         return 'Password must be at least 6 characters.';
     }
     return null;
@@ -39,7 +51,9 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState(false);
     const [successMsg, setSuccessMsg] = useState('');
-    const [formData, setFormData] = useState({ name: '', email: '', password: '' });
+    const [formData, setFormData] = useState({ name: '', email: '', password: '', phone: '', otp: '', newPassword: '', confirmPassword: '' });
+    const [otpUser, setOtpUser] = useState(null);
+    const [otpToken, setOtpToken] = useState('');
 
     useEffect(() => {
         const handleEsc = (e) => {
@@ -61,8 +75,10 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
         if (!isOpen) {
             setView('login');
             setError('');
-            setFormData({ name: '', email: '', password: '' });
+            setFormData({ name: '', email: '', password: '', phone: '', otp: '', newPassword: '', confirmPassword: '' });
             setSuccess(false);
+            setOtpUser(null);
+            setOtpToken('');
         }
     }, [isOpen]);
 
@@ -71,7 +87,7 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
     const switchView = (next) => {
         setView(next);
         setError('');
-        setFormData({ name: '', email: '', password: '' });
+        setFormData({ name: '', email: '', password: '', phone: '', otp: '', newPassword: '', confirmPassword: '' });
     };
 
     const finishLogin = (user) => {
@@ -86,7 +102,9 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
             setPickerLoading(null);
             setError('');
             setView('login');
-            setFormData({ name: '', email: '', password: '' });
+            setFormData({ name: '', email: '', password: '', phone: '', otp: '', newPassword: '', confirmPassword: '' });
+            setOtpUser(null);
+            setOtpToken('');
         }, 1400);
     };
 
@@ -111,10 +129,14 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
             
             if (view === 'forgot') {
                 try {
-                    const res = await axios.post(`${API_URL}${epMap[view]}`, plMap[view]);
-                    setSuccessMsg(res.data.message || 'A reset link has been sent to your email address.');
+                    const res = await axios.post(`${API_URL}/send-otp`, { email: formData.email });
+                    setSuccessMsg(res.data.message || 'OTP sent to your email.');
                     setSuccess(true);
-                    setTimeout(() => { setSuccess(false); setIsLoading(false); setView('login'); }, 3000);
+                    setTimeout(() => {
+                        setSuccess(false);
+                        setIsLoading(false);
+                        setView('forgotOtp');
+                    }, 1500);
                     return;
                 } catch (forgotErr) {
                     if (forgotErr.message.includes("Network Error")) {
@@ -129,8 +151,77 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
                 }
             }
 
+            if (view === 'forgotOtp') {
+                await axios.post(`${API_URL}/verify-otp`, {
+                    email: formData.email,
+                    otp: formData.otp,
+                });
+
+                const resetRes = await axios.post(`${API_URL}/reset-password`, {
+                    email: formData.email,
+                    newPassword: formData.newPassword,
+                });
+
+                setSuccessMsg(resetRes.data.message || 'Password set successfully. You can now login.');
+                setSuccess(true);
+                setTimeout(() => {
+                    setSuccess(false);
+                    setIsLoading(false);
+                    setView('login');
+                    setFormData({ name: '', email: '', password: '', phone: '', otp: '', newPassword: '', confirmPassword: '' });
+                }, 1800);
+                return;
+            }
+
+            if (view === 'otp') {
+                const res = await axios.post(`${API_URL}/send-otp`, { phone: formData.phone });
+                setSuccessMsg(res.data.message || 'OTP sent successfully.');
+                setSuccess(true);
+                setTimeout(() => {
+                    setSuccess(false);
+                    setIsLoading(false);
+                    setView('otpVerify');
+                }, 1200);
+                return;
+            }
+
+            if (view === 'otpVerify') {
+                const res = await axios.post(`${API_URL}/verify-otp`, {
+                    phone: formData.phone,
+                    otp: formData.otp,
+                });
+                const token = res?.data?.token || res?.data?.data?.token || res?.data?.data?.accessToken;
+                const user = res?.data?.data?.user;
+                if (!token || !user) {
+                    throw new Error('Invalid OTP verification response');
+                }
+                localStorage.setItem('token', token);
+                setOtpUser(user);
+                setOtpToken(token);
+                login(token, user);
+                setIsLoading(false);
+                setView('otpChoice');
+                return;
+            }
+
+            if (view === 'setPassword') {
+                await axios.post(
+                    `${API_URL}/set-password`,
+                    { password: formData.newPassword },
+                    { headers: { Authorization: `Bearer ${otpToken || localStorage.getItem('token')}` } }
+                );
+                finishLogin(otpUser || JSON.parse(localStorage.getItem('agri_user') || 'null') || { name: 'User' });
+                return;
+            }
+
             const res = await axios.post(`${API_URL}${epMap[view]}`, plMap[view]);
-            const { accessToken, user } = res.data.data;
+            const token = res?.data?.token || res?.data?.data?.token || res?.data?.data?.accessToken;
+            const user = res?.data?.data?.user;
+            if (!token || !user) {
+                throw new Error('Invalid login response');
+            }
+            const accessToken = token;
+            localStorage.setItem('token', token);
             login(accessToken, user);
             finishLogin(user);
         } catch (err) {
@@ -147,37 +238,19 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
 
     const handleGoogleLogin = async () => {
         setError('');
-        setIsLoading(true);
-        try {
-            const result = await signInWithPopup(auth, googleProvider);
-            const user = {
-                id: result.user.uid,
-                name: result.user.displayName,
-                email: result.user.email,
-                avatar: result.user.photoURL
-            };
-            const accessToken = await result.user.getIdToken();
-            
-            // Store in localStorage via AuthContext login
-            login(accessToken, user);
-            finishLogin(user);
-        } catch (err) {
-            console.error("Google Login Error:", err);
-            if (err.code === 'auth/popup-closed-by-user') {
-                setError('Login cancelled. Please try again.');
-            } else if (err.code === 'auth/network-request-failed') {
-                setError('Network error. Check your connection.');
-            } else {
-                setError(err.message || 'Google login failed.');
-            }
-            setIsLoading(false);
-        }
+        setPickerLoading('google');
+        window.location.href = 'http://localhost:5000/api/auth/google';
     };
 
     const headerMap = {
         login: { title: 'Welcome Back!', sub: 'Sign in to Gawande Krushi' },
         register: { title: 'Create Account', sub: 'Join the Krushi community' },
-        forgot: { title: 'Reset Password', sub: "We'll send a reset link to your email" },
+        forgot: { title: 'Reset Password', sub: "We'll send an OTP to your email" },
+        forgotOtp: { title: 'Reset Password', sub: 'Enter OTP and create a new password' },
+        otp: { title: 'Verify With OTP', sub: 'Enter your phone number to receive OTP' },
+        otpVerify: { title: 'Enter OTP', sub: 'Verify the code sent to your phone' },
+        otpChoice: { title: 'Verification Complete', sub: 'Create a new password or continue login' },
+        setPassword: { title: 'Create New Password', sub: 'Set a password for future logins' },
     };
     const { title, sub } = headerMap[view];
     const isGoogle = false; // Disable the mock picker view
@@ -224,6 +297,7 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
                                     </div>
                                 )}
 
+                                {!['otp', 'otpVerify', 'otpChoice', 'setPassword'].includes(view) && (
                                 <div>
                                     <label className="block text-[13px] font-semibold text-gray-700 mb-1.5">Email address</label>
                                     <div className="relative">
@@ -231,8 +305,73 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
                                         <input type="email" name="email" required autoComplete="email" placeholder="Enter email" value={formData.email} onChange={(e) => { setFormData({ ...formData, email: e.target.value }); setError(''); }} className="w-full pl-9 pr-4 py-2.5 text-sm bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-agri-green/25 focus:border-agri-green outline-none transition-all placeholder:text-gray-400" />
                                     </div>
                                 </div>
+                                )}
 
-                                {view !== 'forgot' && (
+                                {view === 'forgot' && (
+                                    <p className="text-[12px] text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+                                        You can set a password to login without Google.
+                                    </p>
+                                )}
+
+                                {view === 'otp' && (
+                                    <div>
+                                        <label className="block text-[13px] font-semibold text-gray-700 mb-1.5">Phone number</label>
+                                        <div className="relative">
+                                            <input type="tel" name="phone" required placeholder="+919876543210" value={formData.phone} onChange={(e) => { setFormData({ ...formData, phone: e.target.value }); setError(''); }} className="w-full px-4 py-2.5 text-sm bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-agri-green/25 focus:border-agri-green outline-none transition-all placeholder:text-gray-400" />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {view === 'otpVerify' && (
+                                    <>
+                                        <div>
+                                            <label className="block text-[13px] font-semibold text-gray-700 mb-1.5">Phone number</label>
+                                            <input type="tel" name="phone" value={formData.phone} readOnly className="w-full px-4 py-2.5 text-sm bg-gray-100 border border-gray-300 rounded-lg text-gray-500" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[13px] font-semibold text-gray-700 mb-1.5">OTP</label>
+                                            <input type="text" name="otp" maxLength="6" required placeholder="Enter 6-digit OTP" value={formData.otp} onChange={(e) => { setFormData({ ...formData, otp: e.target.value.replace(/\D/g, '') }); setError(''); }} className="w-full px-4 py-2.5 text-sm bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-agri-green/25 focus:border-agri-green outline-none transition-all placeholder:text-gray-400 tracking-[0.3em]" />
+                                        </div>
+                                    </>
+                                )}
+
+                                {view === 'setPassword' && (
+                                    <div>
+                                        <label className="block text-[13px] font-semibold text-gray-700 mb-1.5">New password</label>
+                                        <div className="relative">
+                                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                                            <input type={showPassword ? 'text' : 'password'} name="newPassword" required autoComplete="new-password" placeholder="Enter new password" value={formData.newPassword} onChange={(e) => { setFormData({ ...formData, newPassword: e.target.value }); setError(''); }} className="w-full pl-9 pr-10 py-2.5 text-sm bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-agri-green/25 focus:border-agri-green outline-none transition-all placeholder:text-gray-400" />
+                                            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                                                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {view === 'forgotOtp' && (
+                                    <>
+                                        <div>
+                                            <label className="block text-[13px] font-semibold text-gray-700 mb-1.5">OTP</label>
+                                            <input type="text" name="otp" maxLength="6" required placeholder="Enter 6-digit OTP" value={formData.otp} onChange={(e) => { setFormData({ ...formData, otp: e.target.value.replace(/\D/g, '') }); setError(''); }} className="w-full px-4 py-2.5 text-sm bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-agri-green/25 focus:border-agri-green outline-none transition-all placeholder:text-gray-400 tracking-[0.3em]" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[13px] font-semibold text-gray-700 mb-1.5">New password</label>
+                                            <div className="relative">
+                                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                                                <input type={showPassword ? 'text' : 'password'} name="newPassword" required autoComplete="new-password" placeholder="Enter new password" value={formData.newPassword} onChange={(e) => { setFormData({ ...formData, newPassword: e.target.value }); setError(''); }} className="w-full pl-9 pr-10 py-2.5 text-sm bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-agri-green/25 focus:border-agri-green outline-none transition-all placeholder:text-gray-400" />
+                                                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                                                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-[13px] font-semibold text-gray-700 mb-1.5">Confirm password</label>
+                                            <input type={showPassword ? 'text' : 'password'} name="confirmPassword" required autoComplete="new-password" placeholder="Confirm new password" value={formData.confirmPassword} onChange={(e) => { setFormData({ ...formData, confirmPassword: e.target.value }); setError(''); }} className="w-full px-4 py-2.5 text-sm bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-agri-green/25 focus:border-agri-green outline-none transition-all placeholder:text-gray-400" />
+                                        </div>
+                                    </>
+                                )}
+
+                                {['login', 'register'].includes(view) && (
                                     <div>
                                         <div className="flex justify-between items-center mb-1.5">
                                             <label className="text-[13px] font-semibold text-gray-700">Password</label>
@@ -254,9 +393,20 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
                                     <p className="text-[13px] text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-center">{error}</p>
                                 )}
 
+                                {view === 'otpChoice' ? (
+                                    <div className="space-y-3">
+                                        <button type="button" onClick={() => setView('setPassword')} className="w-full py-2.5 bg-agri-orange hover:bg-orange-500 text-white text-sm font-bold rounded-lg shadow-sm shadow-orange-300 transition-all">
+                                            Create New Password
+                                        </button>
+                                        <button type="button" onClick={() => finishLogin(otpUser || { name: 'User' })} className="w-full py-2.5 bg-white border border-gray-300 text-gray-700 text-sm font-semibold rounded-lg transition-all">
+                                            Skip and Login
+                                        </button>
+                                    </div>
+                                ) : (
                                 <button type="submit" disabled={isLoading} className="w-full py-2.5 bg-agri-orange hover:bg-orange-500 active:bg-orange-600 text-white text-sm font-bold rounded-lg shadow-sm shadow-orange-300 transition-all flex items-center justify-center gap-2 disabled:opacity-60">
-                                    {isLoading ? <Loader2 className="animate-spin" size={18} /> : view === 'login' ? 'Sign In' : view === 'register' ? 'Create your account' : 'Send reset link'}
+                                    {isLoading ? <Loader2 className="animate-spin" size={18} /> : view === 'login' ? 'Sign In' : view === 'register' ? 'Create your account' : view === 'forgot' ? 'Send OTP' : view === 'forgotOtp' ? 'Reset Password' : view === 'otp' ? 'Send OTP' : view === 'otpVerify' ? 'Verify OTP' : 'Save Password'}
                                 </button>
+                                )}
 
                                 {view === 'register' && (
                                     <p className="text-[11px] text-gray-400 leading-relaxed">
@@ -267,7 +417,7 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
                                 )}
                             </form>
 
-                            {view !== 'forgot' && (
+                            {['login', 'register'].includes(view) && (
                                 <>
                                     <div className="flex items-center gap-3 py-1">
                                         <div className="flex-1 border-t border-gray-200" />
@@ -279,6 +429,11 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
                                         Continue with Google
                                     </button>
                                 </>
+                            )}
+                            {view === 'login' && (
+                                <button onClick={() => switchView('otp')} className="w-full py-2.5 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-semibold rounded-lg transition-all flex items-center justify-center gap-2.5 shadow-sm">
+                                    Login with OTP
+                                </button>
                             )}
                         </div>
                     </div>

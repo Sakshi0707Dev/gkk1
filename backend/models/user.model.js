@@ -64,6 +64,11 @@ const userSchema = new mongoose.Schema(
       code: { type: String, select: false },
       expiresAt: { type: Date, select: false },
     },
+    passwordResetOtp: {
+      code: { type: String, select: false },
+      expiresAt: { type: Date, select: false },
+      verified: { type: Boolean, default: false, select: false },
+    },
 
     // ── Refresh Tokens (rotation with family tracking) ─────────────────────
     refreshTokens: {

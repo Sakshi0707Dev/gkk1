@@ -34,7 +34,11 @@ export const clearRefreshCookie = (res) => {
 
 // ─── Issue token pair ─────────────────────────────────────────────────────────
 export const issueTokenPair = (user) => {
-  const payload = { id: user._id, role: user.role };
+  const payload = {
+    id: user._id,
+    email: user.email,
+    role: user.role,
+  };
   return {
     accessToken:  signAccessToken(payload),
     refreshToken: signRefreshToken(payload),

@@ -1,5 +1,6 @@
 import React from 'react';
 import { useLanguage } from '../i18n/LanguageContext';
+import heroImage from '../assets/hero.webp';
 
 const HeroSection = () => {
   const { t } = useLanguage();
@@ -9,7 +10,7 @@ const HeroSection = () => {
       {/* Background Image */}
       <div 
         className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: "url('https://images.pexels.com/photos/11678434/pexels-photo-11678434.jpeg?cs=srgb&dl=pexels-nc-farm-bureau-mark-11678434.jpg&fm=jpg')" }}
+        style={{ backgroundImage: `url(${heroImage})` }}
       ></div>
       
       {/* Dark Overlay */}

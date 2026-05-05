@@ -1,6 +1,8 @@
 import React from 'react';
-import { ShoppingCart, Star } from 'lucide-react';
+import { ShoppingCart, Star, Heart } from 'lucide-react';
 import { useLanguage } from '../i18n/LanguageContext';
+import { useCart } from '../context/CartContext';
+import { useWishlist } from '../context/WishlistContext';
 
 const products = [
   {
@@ -39,6 +41,14 @@ const products = [
 
 const FeaturedProducts = () => {
   const { t } = useLanguage();
+  const { addToCart, cart } = useCart();
+  const { toggleWishlist, isInWishlist } = useWishlist();
+
+  const isInCart = (id) => cart.some(item => item.id === id);
+
+  const handleAddToCart = (product) => {
+    addToCart(product);
+  };
 
   return (
     <section className="py-12 bg-white">
@@ -56,6 +66,15 @@ const FeaturedProducts = () => {
                 <span className="absolute top-2 left-2 z-10 bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded">
                   {t('sale')}
                 </span>
+                <button 
+                  onClick={() => toggleWishlist(product)}
+                  className="absolute top-2 right-2 z-10 p-2 bg-white/80 backdrop-blur-sm rounded-full shadow-sm hover:bg-white transition-all group/wishlist"
+                >
+                  <Heart 
+                    size={18} 
+                    className={`transition-colors ${isInWishlist(product.id) ? 'fill-red-500 text-red-500' : 'text-gray-400 group-hover/wishlist:text-red-500'}`} 
+                  />
+                </button>
                 <img 
                   src={product.image} 
                   alt={product.name} 
@@ -78,9 +97,14 @@ const FeaturedProducts = () => {
                     <span className="text-lg font-bold text-gray-900">{product.price}</span>
                     <span className="text-xs text-gray-400 line-through">{product.oldPrice}</span>
                   </div>
-                  <button className="bg-white border text-sm font-semibold border-agri-green text-agri-green hover:bg-agri-green hover:text-white rounded-md p-2 px-3 transition-colors flex items-center">
+                  <button 
+                    onClick={() => handleAddToCart(product)}
+                    className="bg-white border text-sm font-semibold border-agri-green text-agri-green hover:bg-agri-green hover:text-white rounded-md p-2 px-3 transition-colors flex items-center"
+                  >
                     <ShoppingCart size={16} className="md:mr-2" />
-                    <span className="hidden md:inline">{t('add')}</span>
+                    <span className="hidden md:inline">
+                      {isInCart(product.id) ? 'Added ✓' : (t('add') || 'ADD')}
+                    </span>
                   </button>
                 </div>
               </div>

@@ -2,12 +2,18 @@ import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import session from 'express-session';
+import passport from 'passport';
 import mongoSanitize from 'express-mongo-sanitize';
 import { rateLimit } from 'express-rate-limit';
 
 import authRoutes from './routes/auth.routes.js';
+import orderRoutes from './routes/order.routes.js';
+import paymentRoutes from './routes/payment.routes.js';
+import productRoutes from './routes/product.routes.js';
 import { errorHandler } from './middleware/error.middleware.js';
 import { ENV } from './config/env.js';
+import './config/passport.js';
 
 const app = express();
 
@@ -26,6 +32,18 @@ app.use(cors({
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(cookieParser());
+app.use(session({
+  secret: ENV.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: ENV.NODE_ENV === 'production',
+    httpOnly: true,
+    sameSite: 'lax',
+  },
+}));
+app.use(passport.initialize());
+app.use(passport.session());
 
 // ─── NoSQL Injection Sanitisation ────────────────────────────────────────────
 app.use(mongoSanitize());
@@ -41,6 +59,9 @@ app.use(rateLimit({
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/payment', paymentRoutes);
+app.use('/api/products', productRoutes);
 
 // ─── Health Check ─────────────────────────────────────────────────────────────
 app.get('/api/health', (_req, res) => res.json({ success: true, message: 'API is healthy.' }));

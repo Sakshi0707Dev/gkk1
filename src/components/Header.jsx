@@ -2,10 +2,15 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Search, Globe, Truck, Heart, ShoppingCart, Phone, Menu, X, ChevronRight, LogOut } from 'lucide-react';
 import { useLanguage } from '../i18n/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useCart } from '../context/CartContext';
+import { useWishlist } from '../context/WishlistContext';
+import { Link } from 'react-router-dom';
 import LoginModal from './LoginModal';
 import BrandsDropdown from './BrandsDropdown';
 import CategoriesDropdown from './CategoriesDropdown';
 import Navbar from './Navbar';
+import CartDrawer from './CartDrawer';
+import WishlistDrawer from './WishlistDrawer';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 // Helper: get initials from a name
@@ -48,10 +53,14 @@ const categoryIds = {
 const Header = () => {
   const { language, toggleLanguage, t } = useLanguage();
   const { user, isLoading: authLoading, logout } = useAuth();
+  const { cartTotal } = useCart();
+  const { wishlist } = useWishlist();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isBrandsDropdownOpen, setIsBrandsDropdownOpen] = useState(false);
   const [isCategoriesDropdownOpen, setIsCategoriesDropdownOpen] = useState(false);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isWishlistOpen, setIsWishlistOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [activeBrand, setActiveBrand] = useState(null);
 
@@ -162,9 +171,17 @@ const Header = () => {
           </div>
 
           {/* Wishlist */}
-          <div className="relative flex flex-col items-center cursor-pointer group hidden sm:flex">
-            <div className="p-2 rounded-full group-hover:bg-agri-green/10 transition-all duration-300 group-hover:-translate-y-1">
+          <div 
+            onClick={() => setIsWishlistOpen(true)}
+            className="relative flex flex-col items-center cursor-pointer group hidden sm:flex"
+          >
+            <div className="p-2 rounded-full group-hover:bg-agri-green/10 transition-all duration-300 group-hover:-translate-y-1 relative">
               <Heart size={22} className="group-hover:text-agri-green transition-colors" />
+              {wishlist.length > 0 && (
+                <span className="absolute top-1 right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-[1px] rounded-full shadow-sm ring-2 ring-white">
+                  {wishlist.length}
+                </span>
+              )}
             </div>
             <span className="absolute -bottom-4 text-[9px] font-bold uppercase text-agri-green opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-1 group-hover:translate-y-0 whitespace-nowrap">
               {t('wishlist')}
@@ -211,6 +228,15 @@ const Header = () => {
                   </div>
                 </div>
                 <div className="px-2">
+                  <Link
+                    to="/my-orders"
+                    className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-xl transition-colors font-semibold"
+                  >
+                    <div className="p-1.5 bg-gray-100 rounded-lg">
+                      <Truck size={14} />
+                    </div>
+                    <span>My Orders</span>
+                  </Link>
                   <button
                     onClick={handleLogout}
                     className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 rounded-xl transition-colors font-semibold"
@@ -226,10 +252,13 @@ const Header = () => {
           </div>
 
           {/* Cart */}
-          <div className="relative flex flex-col items-center cursor-pointer group">
+          <div 
+            onClick={() => setIsCartOpen(true)}
+            className="relative flex flex-col items-center cursor-pointer group"
+          >
             <div className="p-2 rounded-full group-hover:bg-agri-green/10 transition-all duration-300 group-hover:-translate-y-1 relative">
               <ShoppingCart size={22} className="group-hover:text-agri-green transition-colors" />
-              <span className="absolute top-1 right-1 bg-agri-orange text-white text-[10px] font-bold px-1.5 py-[1px] rounded-full shadow-sm ring-2 ring-white">0</span>
+              <span className="absolute top-1 right-1 bg-agri-orange text-white text-[10px] font-bold px-1.5 py-[1px] rounded-full shadow-sm ring-2 ring-white">{cartTotal}</span>
             </div>
             <span className="absolute -bottom-4 text-[9px] font-bold uppercase text-agri-green opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-1 group-hover:translate-y-0 whitespace-nowrap">
               {t('cart')}
@@ -315,7 +344,10 @@ const Header = () => {
             <li className="flex items-center space-x-3 px-4 py-3 hover:bg-agri-light text-gray-600">
               <Truck size={18} /><span>{t('track_order')}</span>
             </li>
-            <li className="flex items-center space-x-3 px-4 py-3 hover:bg-agri-light text-gray-600">
+            <li 
+              onClick={() => { setIsWishlistOpen(true); setIsMenuOpen(false); }}
+              className="flex items-center space-x-3 px-4 py-3 hover:bg-agri-light text-gray-600 cursor-pointer"
+            >
               <Heart size={18} /><span>{t('wishlist')}</span>
             </li>
             <li className="flex items-center space-x-3 px-4 py-3 hover:bg-agri-light text-gray-600">
@@ -366,6 +398,16 @@ const Header = () => {
         isOpen={isLoginModalOpen}
         onClose={() => setIsLoginModalOpen(false)}
         onLoginSuccess={handleLoginSuccess}
+      />
+
+      <CartDrawer 
+        isOpen={isCartOpen}
+        onClose={() => setIsCartOpen(false)}
+      />
+
+      <WishlistDrawer
+        isOpen={isWishlistOpen}
+        onClose={() => setIsWishlistOpen(false)}
       />
 
       {/* Brands Mega Menu - Mobile */}

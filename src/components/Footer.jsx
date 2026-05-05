@@ -50,9 +50,15 @@ const Footer = () => {
                 <Phone size={14} className="text-agri-orange mr-2 flex-shrink-0" />
                 <a href="tel:+919284518038" className="hover:text-white transition-colors">+91 92845 18038</a>
               </li>
-              <li className="flex items-center justify-center md:justify-start group">
+              <li className="flex items-center justify-center md:justify-start group overflow-hidden">
                 <SiGmail size={14} className="text-[#EA4335] mr-2 flex-shrink-0" />
-                <a href="mailto:gawandekrushikendra@gmail.com" className="hover:text-white transition-colors text-xs">
+                <a 
+                  href="https://mail.google.com/mail/?view=cm&fs=1&to=gawandekrushikendra@gmail.com" 
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-white transition-colors text-xs truncate" 
+                  title="gawandekrushikendra@gmail.com"
+                >
                   gawandekrushikendra@gmail.com
                 </a>
               </li>

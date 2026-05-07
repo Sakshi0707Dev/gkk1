@@ -22,12 +22,12 @@ const userSchema = new mongoose.Schema(
     password: {
       type: String,
       minlength: [6, 'Password must be at least 6 characters'],
-      select: false,          // never returned by default
+      select: false,
     },
     googleId: {
       type: String,
       unique: true,
-      sparse: true,           // allows multiple null values
+      sparse: true,
       index: true,
     },
     phone: {
@@ -49,7 +49,6 @@ const userSchema = new mongoose.Schema(
       default: false,
     },
 
-    // ── Password Reset ────────────────────────────────────────────────────────
     resetPasswordToken: {
       type: String,
       select: false,
@@ -59,7 +58,6 @@ const userSchema = new mongoose.Schema(
       select: false,
     },
 
-    // ── OTP ───────────────────────────────────────────────────────────────────
     otp: {
       code: { type: String, select: false },
       expiresAt: { type: Date, select: false },
@@ -70,30 +68,32 @@ const userSchema = new mongoose.Schema(
       verified: { type: Boolean, default: false, select: false },
     },
 
-    // ── Refresh Tokens (rotation with family tracking) ─────────────────────
     refreshTokens: {
       type: [String],
-
-
       default: [],
     },
   },
   { timestamps: true }
 );
 
-// ─── Hash password before save ────────────────────────────────────────────────
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password') || !this.password) return next();
   this.password = await bcrypt.hash(this.password, 12);
   next();
 });
 
-// ─── Instance method: compare passwords ───────────────────────────────────────
 userSchema.methods.comparePassword = async function (candidate) {
-  return bcrypt.compare(candidate, this.password);
+  if (!this.password || !candidate) {
+    return false;
+  }
+  try {
+    return await bcrypt.compare(candidate, this.password);
+  } catch (err) {
+    console.error('[MODEL] Password compare error:', err.message);
+    return false;
+  }
 };
 
-// ─── Safe public projection ───────────────────────────────────────────────────
 userSchema.methods.toPublic = function () {
   return {
     id:         this._id,

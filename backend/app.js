@@ -6,14 +6,20 @@ import session from 'express-session';
 import passport from 'passport';
 import mongoSanitize from 'express-mongo-sanitize';
 import { rateLimit } from 'express-rate-limit';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 import authRoutes from './routes/auth.routes.js';
 import orderRoutes from './routes/order.routes.js';
 import paymentRoutes from './routes/payment.routes.js';
 import productRoutes from './routes/product.routes.js';
+import invoiceRoutes from './routes/invoice.routes.js';
 import { errorHandler } from './middleware/error.middleware.js';
 import { ENV } from './config/env.js';
 import './config/passport.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 
@@ -57,11 +63,15 @@ app.use(rateLimit({
   message: { success: false, message: 'Too many requests, please try again later.' },
 }));
 
+// ─── Static Files ───────────────────────────────────────────────────────────
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
 // ─── Routes ───────────────────────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/products', productRoutes);
+app.use('/api/invoices', invoiceRoutes);
 
 // ─── Health Check ─────────────────────────────────────────────────────────────
 app.get('/api/health', (_req, res) => res.json({ success: true, message: 'API is healthy.' }));

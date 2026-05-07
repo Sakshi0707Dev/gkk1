@@ -6,21 +6,17 @@ import {
   setRefreshCookie,
   clearRefreshCookie,
 } from '../utils/jwt.utils.js';
-import { generateResetToken, hashToken, generateOTP } from '../utils/crypto.utils.js';
+import { hashToken, generateOTP } from '../utils/crypto.utils.js';
 import {
-  sendPasswordResetEmail,
   sendPasswordResetOTPEmail,
   sendWelcomeEmail,
 } from '../services/email.service.js';
-import { sendOTPviaSMS } from '../services/otp.service.js';
 import { verifyGoogleToken } from '../services/google.service.js';
 import { ENV } from '../config/env.js';
 
-// ─── Helper: attach tokens and respond ───────────────────────────────────────
 const sendTokenResponse = (res, user, statusCode = 200) => {
   const { accessToken, refreshToken } = issueTokenPair(user);
 
-  // Persist refresh token in DB (for rotation + revocation)
   User.findByIdAndUpdate(
     user._id,
     { $push: { refreshTokens: refreshToken } },
@@ -41,69 +37,119 @@ const sendTokenResponse = (res, user, statusCode = 200) => {
   });
 };
 
-// ─── POST /api/auth/register ─────────────────────────────────────────────────
 export const register = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
+
+  if (!email || !password || !name) {
+    throw new AppError('Name, email and password are required.', 400);
+  }
 
   const existing = await User.findOne({ email: email.toLowerCase() });
   if (existing) throw new AppError('An account with this email already exists.', 409);
 
   const user = await User.create({ name: name.trim(), email, password });
 
-  // Fire-and-forget welcome email (non-blocking)
   sendWelcomeEmail({ to: user.email, name: user.name }).catch(() => {});
 
   sendTokenResponse(res, user, 201);
 });
 
-// ─── POST /api/auth/login ────────────────────────────────────────────────────
 export const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
-  // Explicitly select password (it's excluded by default)
+  if (!email || !password) {
+    throw new AppError('Email and password are required.', 400);
+  }
+
+  console.log('[AUTH] Login attempt for:', email);
+
   const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
 
-  // Generic error prevents user enumeration
-  if (!user || !(await user.comparePassword(password))) {
+  if (!user) {
+    console.log('[AUTH] Login failed: user not found for email:', email);
     throw new AppError('Invalid email or password.', 401);
   }
 
+  if (!user.password) {
+    console.log('[AUTH] Login failed: no password for user:', user.email);
+    throw new AppError('This account uses Google login. Please continue with Google or set a password first.', 401);
+  }
+
+  let isValidPassword = false;
+  try {
+    isValidPassword = await user.comparePassword(password);
+  } catch (err) {
+    console.error('[AUTH] Password comparison error:', err.message);
+    throw new AppError('Invalid email or password.', 401);
+  }
+
+  if (!isValidPassword) {
+    console.log('[AUTH] Login failed: invalid password for user:', user.email);
+    throw new AppError('Invalid email or password.', 401);
+  }
+
+  // Check admin status AFTER successful authentication and upgrade role if needed
+  const isAdmin = isAdminEmail(user.email);
+  if (isAdmin && user.role !== 'admin') {
+    user.role = 'admin';
+    await user.save();
+    console.log('[AUTH] Upgraded to admin:', user.email);
+  } else if (isAdmin) {
+    console.log('[AUTH] Admin login:', user.email);
+  }
+
+  console.log('[AUTH] Login success:', user.email, '| role:', user.role);
   sendTokenResponse(res, user);
 });
 
-// ─── POST /api/auth/google ────────────────────────────────────────────────────
+const isAdminEmail = (email) => {
+  return ENV.ADMIN_EMAILS.includes(email.toLowerCase());
+};
+
 export const googleAuth = asyncHandler(async (req, res) => {
   const { idToken } = req.body;
   const payload = await verifyGoogleToken(idToken);
 
   const { sub: googleId, email, name, picture } = payload;
 
-  // Find by googleId first, then email (handles existing email-signup users)
-  let user = await User.findOne({ $or: [{ googleId }, { email }] });
+  const userRole = isAdminEmail(email) ? 'admin' : 'user';
+
+  console.log('[AUTH] Google OAuth callback for:', email);
+
+  // Find user by googleId OR by email (handles existing email-signup users)
+  let user = await User.findOne({ $or: [{ googleId }, { email: email.toLowerCase() }] });
 
   if (user) {
-    // Link Google account if it wasn't linked before
+    // Existing user - link Google account if not already linked
+    const wasLinked = !user.googleId;
     if (!user.googleId) {
       user.googleId = googleId;
       user.isVerified = true;
       if (picture && !user.avatar) user.avatar = picture;
-      await user.save();
+      console.log('[AUTH] Linked Google account to existing user:', email);
     }
+    if (isAdminEmail(email) && user.role !== 'admin') {
+      user.role = 'admin';
+      console.log('[AUTH] Upgraded to admin:', email);
+    }
+    await user.save();
   } else {
-    // New Google user
+    // New Google user - create account without password
     user = await User.create({
       name,
-      email,
+      email: email.toLowerCase(),
       googleId,
       avatar: picture || null,
-      isVerified: true,    // Google accounts are pre-verified
+      isVerified: true,
+      role: userRole,
     });
+    console.log('[AUTH] Created new Google user:', email);
   }
 
+  console.log('[AUTH] Google login success:', user.email);
   sendTokenResponse(res, user);
 });
 
-// ─── GET /api/auth/me ─────────────────────────────────────────────────────────
 export const getMe = asyncHandler(async (req, res) => {
   res.json({
     success: true,
@@ -112,12 +158,10 @@ export const getMe = asyncHandler(async (req, res) => {
   });
 });
 
-// ─── POST /api/auth/logout ────────────────────────────────────────────────────
 export const logout = asyncHandler(async (req, res) => {
   const token = req.cookies?.refreshToken;
 
   if (token) {
-    // Remove this refresh token from the DB whitelist
     await User.findByIdAndUpdate(req.user._id, { $pull: { refreshTokens: token } });
   }
 
@@ -126,7 +170,6 @@ export const logout = asyncHandler(async (req, res) => {
   res.json({ success: true, message: 'Logged out successfully.', data: null });
 });
 
-// ─── POST /api/auth/refresh-token ─────────────────────────────────────────────
 export const refreshToken = asyncHandler(async (req, res) => {
   const token = req.cookies?.refreshToken;
   if (!token) throw new AppError('No refresh token provided.', 401);
@@ -138,19 +181,15 @@ export const refreshToken = asyncHandler(async (req, res) => {
     throw new AppError('Invalid or expired refresh token. Please log in again.', 401);
   }
 
-  // Fetch user with their token list
   const user = await User.findById(decoded.id).select('+refreshTokens');
   if (!user) throw new AppError('User no longer exists.', 401);
 
-  // Verify token is in the whitelist (detects reuse after logout)
   if (!user.refreshTokens.includes(token)) {
-    // Token reuse detected — invalidate ALL tokens (family breach)
     await User.findByIdAndUpdate(decoded.id, { $set: { refreshTokens: [] } });
     clearRefreshCookie(res);
     throw new AppError('Refresh token reuse detected. All sessions revoked. Please log in again.', 401);
   }
 
-  // Rotate: remove old, issue new
   user.refreshTokens = user.refreshTokens.filter((t) => t !== token);
   const { accessToken, refreshToken: newRefreshToken } = issueTokenPair(user);
   user.refreshTokens.push(newRefreshToken);
@@ -165,13 +204,17 @@ export const refreshToken = asyncHandler(async (req, res) => {
   });
 });
 
-// ─── POST /api/auth/forgot-password ───────────────────────────────────────────
 export const forgotPassword = asyncHandler(async (req, res) => {
   const { email } = req.body;
 
+  if (!email) {
+    throw new AppError('Email is required.', 400);
+  }
+
+  console.log('[AUTH] Forgot password request for:', email);
+
   const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
 
-  // Always respond identically — prevents email enumeration
   const genericResponse = () =>
     res.json({
       success: true,
@@ -179,37 +222,44 @@ export const forgotPassword = asyncHandler(async (req, res) => {
       data: null,
     });
 
-  if (!user) return genericResponse();
-  if (user.googleId && !user.password) {
-    // Google-only accounts can't reset password via email
+  if (!user) {
+    console.log('[AUTH] Forgot password: user not found');
     return genericResponse();
   }
 
-  const { rawToken, hashedToken } = generateResetToken();
+  // Allow both regular users and Google users to reset password
+  // Google users can now set a password through this flow
+  const otp = generateOTP();
+  const otpHash = hashToken(otp);
 
-  user.resetPasswordToken  = hashedToken;
-  user.resetPasswordExpire = new Date(Date.now() + 15 * 60 * 1000); // 15 min
+  user.passwordResetOtp = {
+    code: otpHash,
+    expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+    verified: false,
+  };
   await user.save({ validateBeforeSave: false });
 
-  const resetURL = `${ENV.CLIENT_URL}/reset-password/${rawToken}`;
+  if (ENV.NODE_ENV !== 'production') {
+    console.log('[AUTH DEBUG] Forgot password OTP for', user.email, ':', otp);
+  }
 
   try {
-    await sendPasswordResetEmail({ to: user.email, name: user.name, resetURL });
-  } catch {
-    // Clean up on email failure so user can try again
-    user.resetPasswordToken  = undefined;
-    user.resetPasswordExpire = undefined;
-    await user.save({ validateBeforeSave: false });
-    throw new AppError('Email could not be sent. Please try again later.', 500);
+    await sendPasswordResetOTPEmail({ to: user.email, name: user.name, otp });
+    console.log('[AUTH] Password reset OTP email sent to:', user.email);
+  } catch (emailErr) {
+    console.warn('[AUTH] Email failed - OTP shown in console:', otp);
   }
 
   genericResponse();
 });
 
-// ─── POST /api/auth/reset-password ────────────────────────────────────────────
 export const resetPassword = asyncHandler(async (req, res) => {
   const { token } = req.params;
   const { password } = req.body;
+
+  if (!token || !password) {
+    throw new AppError('Token and new password are required.', 400);
+  }
 
   const hashedToken = hashToken(token);
 
@@ -223,11 +273,12 @@ export const resetPassword = asyncHandler(async (req, res) => {
   user.password            = password;
   user.resetPasswordToken  = undefined;
   user.resetPasswordExpire = undefined;
-  // Invalidate all active sessions after password change
   user.refreshTokens       = [];
   await user.save();
 
   clearRefreshCookie(res);
+
+  console.log('[AUTH] Password reset success for:', user.email);
 
   res.json({
     success: true,
@@ -236,121 +287,14 @@ export const resetPassword = asyncHandler(async (req, res) => {
   });
 });
 
-// ─── POST /api/auth/send-otp ──────────────────────────────────────────────────
-export const sendOTP = asyncHandler(async (req, res) => {
-  const { phone, email } = req.body;
-
-  if (email) {
-    const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
-    if (!user) throw new AppError('No account found with that email address.', 404);
-
-    const otp = generateOTP();
-    const otpHash = hashToken(otp);
-
-    if (ENV.NODE_ENV !== 'production') {
-      console.log('[AUTH DEBUG] Preparing password reset OTP for:', user.email);
-    }
-
-    user.passwordResetOtp = {
-      code: otpHash,
-      expiresAt: new Date(Date.now() + 5 * 60 * 1000),
-      verified: false,
-    };
-    await user.save({ validateBeforeSave: false });
-
-    await sendPasswordResetOTPEmail({ to: user.email, name: user.name, otp });
-
-    return res.json({
-      success: true,
-      message: 'OTP sent to your email.',
-      data: null,
-    });
-  }
-
-  // Find user by phone or the authenticated user (if logged in)
-  const userId = req.user?._id;
-  const user = userId
-    ? await User.findById(userId)
-    : await User.findOne({ phone });
-
-  if (!user) throw new AppError('No account found with that phone number.', 404);
-
-  const otp     = generateOTP();
-  const otpHash = hashToken(otp); // store hash, never plaintext
-
-  user.otp = {
-    code:      otpHash,
-    expiresAt: new Date(Date.now() + ENV.OTP_EXPIRES_MINUTES * 60 * 1000),
-  };
-  await user.save({ validateBeforeSave: false });
-
-  await sendOTPviaSMS(phone, otp);
-
-  res.json({
-    success: true,
-    message: `OTP sent to ${phone}. Valid for ${ENV.OTP_EXPIRES_MINUTES} minutes.`,
-    data: null,
-  });
-});
-
-// ─── POST /api/auth/verify-otp ────────────────────────────────────────────────
-export const verifyOTP = asyncHandler(async (req, res) => {
-  const { phone, email, otp } = req.body;
-
-  if (email) {
-    const user = await User.findOne({ email: email.toLowerCase() })
-      .select('+passwordResetOtp.code +passwordResetOtp.expiresAt +passwordResetOtp.verified');
-    if (!user) throw new AppError('No account found with that email address.', 404);
-
-    if (!user.passwordResetOtp?.code || !user.passwordResetOtp?.expiresAt) {
-      throw new AppError('No OTP was requested for this email.', 400);
-    }
-
-    if (new Date() > user.passwordResetOtp.expiresAt) {
-      throw new AppError('OTP has expired. Please request a new one.', 400);
-    }
-
-    const hashedInput = hashToken(otp);
-    if (hashedInput !== user.passwordResetOtp.code) {
-      throw new AppError('Invalid OTP. Please try again.', 400);
-    }
-
-    user.passwordResetOtp.verified = true;
-    await user.save({ validateBeforeSave: false });
-
-    return res.json({
-      success: true,
-      message: 'OTP verified successfully.',
-      data: null,
-    });
-  }
-
-  const user = await User.findOne({ phone }).select('+otp.code +otp.expiresAt');
-  if (!user) throw new AppError('No account found with that phone number.', 404);
-
-  if (!user.otp?.code || !user.otp?.expiresAt) {
-    throw new AppError('No OTP was requested for this account.', 400);
-  }
-
-  if (new Date() > user.otp.expiresAt) {
-    throw new AppError('OTP has expired. Please request a new one.', 400);
-  }
-
-  const hashedInput = hashToken(otp);
-  if (hashedInput !== user.otp.code) {
-    throw new AppError('Invalid OTP. Please try again.', 400);
-  }
-
-  // Mark phone as verified, clear OTP
-  user.isVerified = true;
-  user.otp        = undefined;
-  await user.save({ validateBeforeSave: false });
-
-  sendTokenResponse(res, user);
-});
-
 export const resetPasswordWithOtp = asyncHandler(async (req, res) => {
   const { email, newPassword } = req.body;
+
+  if (!email || !newPassword) {
+    throw new AppError('Email and new password are required.', 400);
+  }
+
+  console.log('[AUTH] Reset password with OTP for:', email);
 
   const user = await User.findOne({ email: email.toLowerCase() })
     .select('+passwordResetOtp.code +passwordResetOtp.expiresAt +passwordResetOtp.verified +refreshTokens');
@@ -374,6 +318,8 @@ export const resetPasswordWithOtp = asyncHandler(async (req, res) => {
 
   clearRefreshCookie(res);
 
+  console.log('[AUTH] Password reset success for:', user.email);
+
   res.json({
     success: true,
     message: 'Password set successfully. You can now login.',
@@ -381,12 +327,57 @@ export const resetPasswordWithOtp = asyncHandler(async (req, res) => {
   });
 });
 
-// ─── POST /api/auth/set-password ───────────────────────────────────────────────
+export const verifyOTP = asyncHandler(async (req, res) => {
+  const { email, otp } = req.body;
+
+  if (!email || !otp) {
+    throw new AppError('Email and OTP are required.', 400);
+  }
+
+  console.log('[AUTH] Verify OTP for:', email);
+
+  const user = await User.findOne({ email: email.toLowerCase() })
+    .select('+passwordResetOtp.code +passwordResetOtp.expiresAt +passwordResetOtp.verified');
+
+  if (!user) throw new AppError('No account found with that email address.', 404);
+
+  if (!user.passwordResetOtp?.code || !user.passwordResetOtp?.expiresAt) {
+    throw new AppError('No OTP was requested for this email.', 400);
+  }
+
+  if (new Date() > user.passwordResetOtp.expiresAt) {
+    throw new AppError('OTP has expired. Please request a new one.', 400);
+  }
+
+  const hashedInput = hashToken(otp);
+  if (hashedInput !== user.passwordResetOtp.code) {
+    console.log('[AUTH] Verify OTP failed: invalid OTP for:', email);
+    throw new AppError('Invalid OTP. Please try again.', 400);
+  }
+
+  user.passwordResetOtp.verified = true;
+  await user.save({ validateBeforeSave: false });
+
+  console.log('[AUTH] OTP verified for:', email);
+
+  res.json({
+    success: true,
+    message: 'OTP verified successfully. You can now set your password.',
+    data: null,
+  });
+});
+
 export const setPassword = asyncHandler(async (req, res) => {
   const { password } = req.body;
 
+  if (!password) {
+    throw new AppError('New password is required.', 400);
+  }
+
   req.user.password = password;
   await req.user.save();
+
+  console.log('[AUTH] Password set for:', req.user.email);
 
   res.json({
     success: true,
@@ -395,7 +386,6 @@ export const setPassword = asyncHandler(async (req, res) => {
   });
 });
 
-// ─── GET /api/auth/google/callback ────────────────────────────────────────────
 export const googleOAuthCallback = asyncHandler(async (req, res) => {
   const user = req.user;
   if (!user) throw new AppError('Google authentication failed.', 401);

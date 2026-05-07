@@ -6,10 +6,12 @@ const connectDB = async () => {
     const conn = await mongoose.connect(ENV.MONGO_URI, {
       serverSelectionTimeoutMS: 5000,
     });
-    console.log(`✅  MongoDB connected: ${conn.connection.host}`);
+    console.log(`[DB] MongoDB connected: ${conn.connection.host}`);
+    return true;
   } catch (err) {
-    console.error('❌  MongoDB connection error:', err.message);
-    process.exit(1);
+    console.warn(`[DB] MongoDB not available: ${err.message}`);
+    console.warn('[DB] Server starting without database - auth features disabled');
+    return false;
   }
 };
 

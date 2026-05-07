@@ -11,9 +11,8 @@ import {
   refreshToken,
   forgotPassword,
   resetPassword,
-  sendOTP,
-  verifyOTP,
   resetPasswordWithOtp,
+  verifyOTP,
   setPassword,
   googleOAuthCallback,
 } from '../controllers/auth.controller.js';
@@ -26,17 +25,17 @@ import {
   forgotValidator,
   resetValidator,
   googleValidator,
-  sendOTPValidator,
   verifyOTPValidator,
   resetPasswordWithOtpValidator,
   setPasswordValidator,
 } from '../validators/auth.validators.js';
 
+import { ENV } from '../config/env.js';
+
 const router = Router();
 
-// ─── Strict rate limit for sensitive auth endpoints ───────────────────────────
 const authLimit = rateLimit({
-  windowMs: 15 * 60 * 1000,    // 15 minutes
+  windowMs: 15 * 60 * 1000,
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
@@ -46,33 +45,31 @@ const authLimit = rateLimit({
   },
 });
 
-const otpLimit = rateLimit({
-  windowMs: 10 * 60 * 1000,    // 10 minutes
-  max: 5,
-  message: {
-    success: false,
-    message: 'Too many OTP requests. Please wait before requesting another.',
-  },
-});
-
-// ─── Public Routes ────────────────────────────────────────────────────────────
 router.post('/register',      authLimit, registerValidator,   register);
 router.post('/login',         authLimit, loginValidator,      login);
-router.post('/google',        authLimit, googleValidator,     googleAuth);
-router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
-router.get(
-  '/google/callback',
-  passport.authenticate('google', { session: true, failureRedirect: `${process.env.CLIENT_URL || 'http://localhost:5173'}/login-success?error=google_auth_failed` }),
-  googleOAuthCallback
-);
+
+if (ENV.GOOGLE_CLIENT_ID && ENV.GOOGLE_CLIENT_SECRET) {
+  router.post('/google',        authLimit, googleValidator,     googleAuth);
+  router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+  router.get(
+    '/google/callback',
+    passport.authenticate('google', { session: true, failureRedirect: `${ENV.CLIENT_URL}/login-success?error=google_auth_failed` }),
+    googleOAuthCallback
+  );
+  console.log('[ROUTES] Google OAuth routes enabled');
+} else {
+  router.post('/google', (_req, res) => {
+    res.status(503).json({ success: false, message: 'Google OAuth not configured.' });
+  });
+  console.log('[ROUTES] Google OAuth routes disabled');
+}
+
 router.post('/refresh-token',           refreshToken);
 router.post('/forgot-password',         forgotValidator,      forgotPassword);
+router.post('/verify-otp',    authLimit, verifyOTPValidator,  verifyOTP);
 router.post('/reset-password',          resetPasswordWithOtpValidator, resetPasswordWithOtp);
 router.post('/reset-password/:token',   resetValidator,       resetPassword);
-router.post('/send-otp',      otpLimit,  sendOTPValidator,    sendOTP);
-router.post('/verify-otp',    authLimit, verifyOTPValidator,  verifyOTP);
 
-// ─── Protected Routes ─────────────────────────────────────────────────────────
 router.get ('/me',     protect, getMe);
 router.post('/logout', protect, logout);
 router.post('/set-password', protect, setPasswordValidator, setPassword);

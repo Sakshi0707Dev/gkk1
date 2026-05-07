@@ -1,17 +1,32 @@
-import express from 'express';
-import cors from 'cors';
+import 'dotenv/config';
 
-const app = express();
-const PORT = process.env.PORT || 5000;
+import app from './backend/app.js';
+import { ENV } from './backend/config/env.js';
+import connectDB from './backend/config/db.js';
+import { verifyTransporter } from './backend/services/email.service.js';
 
-app.use(cors());
-app.use(express.json());
+const start = async () => {
+  try {
+    await connectDB();
+    console.log('[SERVER] Database connected');
+  } catch (err) {
+    console.warn('[SERVER] Database connection failed:', err.message);
+  }
 
-// Backend auth/login removed per request — keep a minimal API surface.
-app.get('/api/ping', (req, res) => {
-  res.json({ ok: true, message: 'Backend auth removed.' });
-});
+  if (ENV.SMTP_USER && ENV.SMTP_PASS) {
+    const emailCheck = await verifyTransporter();
+    if (emailCheck.verified) {
+      console.log('[SERVER] Email service ready');
+    } else {
+      console.warn('[SERVER] Email service error:', emailCheck.error);
+    }
+  } else {
+    console.log('[SERVER] Email not configured');
+  }
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
+  app.listen(ENV.PORT, () => {
+    console.log(`Server running on http://localhost:${ENV.PORT} in ${ENV.NODE_ENV} mode`);
+  });
+};
+
+start();

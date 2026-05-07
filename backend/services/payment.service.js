@@ -4,6 +4,7 @@ import Razorpay from 'razorpay';
 import { ENV } from '../config/env.js';
 import Order from '../models/order.model.js';
 import { AppError } from '../utils/asyncHandler.js';
+import { invoiceService } from './invoice.service.js';
 
 const getRazorpayClient = () => {
   if (!ENV.RAZORPAY_KEY_ID || !ENV.RAZORPAY_KEY_SECRET) {
@@ -81,6 +82,16 @@ export const verifyPaymentService = async ({
   }
 
   await order.save();
+
+  if (isSignatureValid && ENV.AUTO_GENERATE_INVOICE !== 'false') {
+    try {
+      console.log(`[PAYMENT_SERVICE] Auto-generating invoice for order: ${order._id}`);
+      const invoiceResult = await invoiceService.generateAndSendInvoice(order._id);
+      console.log(`[PAYMENT_SERVICE] Invoice generated: ${invoiceResult.invoice?.invoiceNumber}, WhatsApp: ${invoiceResult.whatsappSent}`);
+    } catch (invoiceError) {
+      console.error(`[PAYMENT_SERVICE] Error generating invoice:`, invoiceError.message);
+    }
+  }
 
   return {
     success: isSignatureValid,

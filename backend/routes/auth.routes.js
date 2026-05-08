@@ -54,25 +54,36 @@ const getClientUrl = () => {
     : ENV.CLIENT_URL;
 };
 
-if (ENV.GOOGLE_CLIENT_ID && ENV.GOOGLE_CLIENT_SECRET) {
-  router.get('/google', (req, res, next) => {
-    console.log('[OAUTH] Google auth started, redirecting to Google...');
-    next();
-  }, passport.authenticate('google', { scope: ['profile', 'email'] }));
+router.get('/google', (req, res, next) => {
+  if (!ENV.GOOGLE_CLIENT_ID || !ENV.GOOGLE_CLIENT_SECRET) {
+    console.log('[OAUTH] Google OAuth not configured - missing credentials');
+    return res.status(503).json({ success: false, message: 'Google OAuth not configured.' });
+  }
+  console.log('[OAUTH] Initiating Google OAuth flow...');
+  next();
+}, passport.authenticate('google', { scope: ['profile', 'email'] }));
+
+router.get('/google/callback', (req, res, next) => {
+  console.log('[OAUTH] Callback route hit');
+  console.log('[OAUTH] Google configured:', Boolean(ENV.GOOGLE_CLIENT_ID && ENV.GOOGLE_CLIENT_SECRET));
   
-  router.get(
-    '/google/callback',
-    passport.authenticate('google', { session: true, failureRedirect: `${getClientUrl()}/login-success?error=google_auth_failed` }),
-    googleOAuthCallback
-  );
-  console.log('[ROUTES] Google OAuth routes enabled');
-  console.log('[ROUTES] Google callback URL:', ENV.GOOGLE_CALLBACK_URL);
-} else {
-  router.post('/google', (_req, res) => {
-    res.status(503).json({ success: false, message: 'Google OAuth not configured.' });
+  if (!ENV.GOOGLE_CLIENT_ID || !ENV.GOOGLE_CLIENT_SECRET) {
+    console.log('[OAUTH] No credentials - returning 503');
+    return res.status(503).json({ success: false, message: 'Google OAuth not configured.' });
+  }
+  
+  passport.authenticate('google', { 
+    session: true, 
+    failureRedirect: `${getClientUrl()}/login-success?error=google_auth_failed` 
+  })(req, res, (err) => {
+    if (err) {
+      console.error('[OAUTH] Passport authenticate error:', err.message);
+      return res.redirect(`${getClientUrl()}/login-success?error=${encodeURIComponent(err.message)}`);
+    }
+    console.log('[OAUTH] Passport success - calling callback handler');
+    next();
   });
-  console.log('[ROUTES] Google OAuth routes disabled');
-}
+}, googleOAuthCallback);
 
 router.post('/refresh-token',           refreshToken);
 router.post('/forgot-password',         forgotValidator,      forgotPassword);
@@ -83,5 +94,26 @@ router.post('/reset-password/:token',   resetValidator,       resetPassword);
 router.get ('/me',     protect, getMe);
 router.post('/logout', protect, logout);
 router.post('/set-password', protect, setPasswordValidator, setPassword);
+
+console.log('[ROUTES] Registering auth routes');
+console.log('[ROUTES] Google OAuth enabled:', Boolean(ENV.GOOGLE_CLIENT_ID && ENV.GOOGLE_CLIENT_SECRET));
+
+router.get('/debug-oauth-routes', (_req, res) => {
+  const googleCallbackUrl = ENV.NODE_ENV === 'production' 
+    ? (ENV.GOOGLE_CALLBACK_URL_PROD || ENV.GOOGLE_CALLBACK_URL_DEV)
+    : ENV.GOOGLE_CALLBACK_URL_DEV;
+  
+  return res.json({
+    googleEnabled: Boolean(ENV.GOOGLE_CLIENT_ID && ENV.GOOGLE_CLIENT_SECRET),
+    callbackUrl: googleCallbackUrl,
+    clientUrl: ENV.CLIENT_URL,
+    prodClientUrl: ENV.PRODUCTION_CLIENT_URL,
+    routes: [
+      { method: 'POST', path: '/api/auth/google' },
+      { method: 'GET', path: '/api/auth/google' },
+      { method: 'GET', path: '/api/auth/google/callback' }
+    ]
+  });
+});
 
 export default router;

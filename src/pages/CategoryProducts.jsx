@@ -121,9 +121,12 @@ const CategoryProducts = () => {
                   />
                 </button>
                 <img
-                  src={product.image || 'https://via.placeholder.com/150?text=No+Image'}
+                  src={product.image || 'https://via.placeholder.com/400x300?text=No+Image'}
                   alt={product.name}
                   className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500"
+                  onError={(e) => {
+                    e.target.src = 'https://via.placeholder.com/400x300?text=No+Image';
+                  }}
                 />
               </div>
               <div className="p-5 flex flex-col flex-1 border-t border-gray-50">

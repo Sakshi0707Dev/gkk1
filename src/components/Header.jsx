@@ -20,16 +20,22 @@ const getInitials = (name = '') => {
 };
 
 // Avatar circle — shows initials, or Google photo if available
-const UserAvatar = ({ user, size = 'md' }) => {
-  const initials = getInitials(user.name);
+const UserAvatar = ({ user, size = 'md', fallbackUrl = null }) => {
+  const initials = user?.name ? getInitials(user.name) : '?';
   const sizeClass = size === 'sm' ? 'w-7 h-7 text-xs' : 'w-9 h-9 text-sm';
 
-  if (user.avatar || user.photoURL) {
+  const avatarSrc = user?.avatar || user?.photoURL || user?.picture || fallbackUrl;
+
+  if (avatarSrc && typeof avatarSrc === 'string') {
     return (
       <img
-        src={user.avatar || user.photoURL}
-        alt={user.name}
+        src={avatarSrc}
+        alt={user?.name || 'User'}
         className={`${sizeClass} rounded-full object-cover ring-2 ring-white shadow`}
+        onError={(e) => {
+          e.target.style.display = 'none';
+          e.target.nextSibling?.style?.removeProperty('display');
+        }}
       />
     );
   }
@@ -299,7 +305,12 @@ const Header = () => {
       <div className={`fixed top-0 left-0 bottom-0 w-[280px] bg-white z-[60] lg:hidden transform transition-transform duration-300 ease-in-out shadow-2xl flex flex-col ${isMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-agri-green text-white">
           <div className="flex items-center space-x-2 min-w-0">
-            <img src="/logo.png.jpeg" alt="Logo" className="w-8 h-8 bg-white p-0.5 rounded-md flex-shrink-0" />
+            <img
+                  src="/logo.png.jpeg"
+                  alt="Logo"
+                  className="w-8 h-8 bg-white p-0.5 rounded-md flex-shrink-0"
+                  onError={(e) => { e.target.src = 'https://via.placeholder.com/64x64?text=Logo'; }}
+                />
             <div className="min-w-0">
               <span className="text-sm font-semibold leading-tight block break-words max-w-[140px]">Gawande Krushi Kendra</span>
               <span className="text-xs text-gray-200">Since 2006</span>

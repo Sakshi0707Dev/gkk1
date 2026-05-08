@@ -42,6 +42,7 @@ const ShopByCategory = () => {
                   src={category.image}
                   alt={category.name}
                   className="card-image"
+                  onError={(e) => { e.target.style.opacity = '0.3'; }}
                 />
               </div>
               <span className="card-name">{category.name}</span>

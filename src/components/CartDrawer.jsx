@@ -45,7 +45,12 @@ const CartDrawer = ({ isOpen, onClose }) => {
               <div className="space-y-4">
                 {cart.map((item) => (
                   <div key={item.id} className="flex gap-4 p-3 bg-gray-50 rounded-xl border border-gray-100">
-                    <img src={item.image} alt={item.name} className="w-20 h-20 object-contain bg-white rounded-lg p-1" />
+                    <img 
+                        src={item.image} 
+                        alt={item.name} 
+                        className="w-20 h-20 object-contain bg-white rounded-lg p-1"
+                        onError={(e) => { e.target.src = 'https://via.placeholder.com/80x80?text=No+Image'; }}
+                      />
                     <div className="flex-1 min-w-0">
                       <h3 className="text-sm font-bold text-gray-800 truncate">{item.name}</h3>
                       <p className="text-agri-green font-bold mt-1">{item.price}</p>

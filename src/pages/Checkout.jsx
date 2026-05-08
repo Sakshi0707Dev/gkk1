@@ -176,7 +176,12 @@ const Checkout = () => {
               <div className="space-y-4">
                 {cart.map((item) => (
                   <div key={item.id} className="flex gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                    <img src={item.image} alt={item.name} className="w-16 h-16 object-contain bg-white rounded-lg" />
+                    <img 
+                      src={item.image} 
+                      alt={item.name} 
+                      className="w-16 h-16 object-contain bg-white rounded-lg"
+                      onError={(e) => { e.target.src = 'https://via.placeholder.com/64x64?text=No+Image'; }}
+                    />
                     <div className="flex-1 flex justify-between items-center">
                       <div>
                         <h3 className="font-bold text-gray-800 text-sm sm:text-base">{item.name}</h3>

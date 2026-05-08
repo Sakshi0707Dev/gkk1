@@ -58,7 +58,7 @@ const CategoriesSection = () => {
           {categorySections.map((section) => (
             <div key={section.id}>
               <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                <img src={section.image} alt="" className="w-6 h-6 object-contain" />
+                <img src={section.image} alt="" className="w-6 h-6 object-contain" onError={(e) => { e.target.style.display = 'none'; }} />
                 {section.name}
               </h3>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
@@ -73,6 +73,7 @@ const CategoriesSection = () => {
                         src={subcategory.image}
                         alt={subcategory.name} 
                         className="w-full h-full object-cover rounded-full group-hover:scale-105 transition-transform duration-300"
+                        onError={(e) => { e.target.src = 'https://via.placeholder.com/80x80?text=Category'; }}
                       />
                     </div>
                     <span className="font-semibold text-gray-700 group-hover:text-agri-green transition-colors text-xs text-center leading-tight">

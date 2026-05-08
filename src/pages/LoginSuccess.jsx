@@ -32,7 +32,7 @@ const LoginSuccess = () => {
         localStorage.setItem('token', token);
         localStorage.setItem('agri_token', token);
 
-        const res = await api.get('/me', {
+        const res = await api.get('/auth/me', {
           headers: { Authorization: `Bearer ${token}` },
         });
 

@@ -79,7 +79,7 @@ export const AuthProvider = ({ children }) => {
             });
             const freshUser = res.data.data.user;
             if (import.meta.env.DEV) {
-              console.log('[AUTH DEBUG] /api/auth/me success for:', freshUser?.email);
+              console.log('[AUTH DEBUG] /auth/me success for:', freshUser?.email);
             }
             setUser(freshUser);
             localStorage.setItem(USER_KEY, JSON.stringify(freshUser));

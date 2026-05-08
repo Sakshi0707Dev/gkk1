@@ -26,7 +26,7 @@ const MyOrders = () => {
     setLoading(true);
     setError('');
     try {
-      const res = await api.get('/api/orders/my');
+      const res = await api.get('/orders/my');
       setOrders(res.data?.data?.orders || []);
     } catch (err) {
       setError(err?.response?.data?.message || 'Unable to load orders.');
@@ -43,7 +43,7 @@ const MyOrders = () => {
   const updateStatus = async (orderId, status) => {
     setUpdatingId(orderId);
     try {
-      const res = await api.put(`/api/orders/update-status/${orderId}`, { status });
+      const res = await api.put(`/orders/update-status/${orderId}`, { status });
       const updated = res.data?.data?.order;
       if (updated?._id) {
         setOrders((prev) => prev.map((o) => (o._id === updated._id ? updated : o)));

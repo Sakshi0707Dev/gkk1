@@ -29,7 +29,7 @@ const CategoryProducts = () => {
         // DEBUG LOG: Log category from request
         console.log('Frontend requesting products for category:', category);
 
-        const res = await api.get('/api/products', { params: { category } });
+        const res = await api.get('/products', { params: { category } });
         const apiProducts = res.data?.data?.products || [];
         
         // DEBUG LOG: Log products returned from API

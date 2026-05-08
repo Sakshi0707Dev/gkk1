@@ -387,8 +387,13 @@ export const setPassword = asyncHandler(async (req, res) => {
 });
 
 export const googleOAuthCallback = asyncHandler(async (req, res) => {
+  console.log('[OAUTH] Callback reached, user:', req.user?.email);
+  
   const user = req.user;
-  if (!user) throw new AppError('Google authentication failed.', 401);
+  if (!user) {
+    console.error('[OAUTH] Callback error: user not found in session');
+    throw new AppError('Google authentication failed.', 401);
+  }
 
   const { accessToken, refreshToken } = issueTokenPair(user);
 
@@ -400,7 +405,12 @@ export const googleOAuthCallback = asyncHandler(async (req, res) => {
 
   setRefreshCookie(res, refreshToken);
 
-  const redirectURL =
-    `${ENV.CLIENT_URL}/login-success?token=${encodeURIComponent(accessToken)}`;
+  const clientUrl = ENV.NODE_ENV === 'production' && ENV.PRODUCTION_CLIENT_URL
+    ? ENV.PRODUCTION_CLIENT_URL
+    : ENV.CLIENT_URL;
+  
+  const redirectURL = `${clientUrl}/login-success?token=${encodeURIComponent(accessToken)}`;
+  console.log('[OAUTH] Redirecting to:', redirectURL);
+  
   return res.redirect(redirectURL);
 });

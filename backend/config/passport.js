@@ -3,14 +3,18 @@ import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 
 import { ENV } from './env.js';
 import { findOrCreateGoogleUser } from '../services/googleOAuth.service.js';
+import User from '../models/user.model.js';
 
 if (ENV.GOOGLE_CLIENT_ID && ENV.GOOGLE_CLIENT_SECRET) {
+  const callbackURL = ENV.GOOGLE_CALLBACK_URL;
+  console.log('[AUTH] Google OAuth callback URL:', callbackURL);
+  
   passport.use(
     new GoogleStrategy(
       {
         clientID: ENV.GOOGLE_CLIENT_ID,
         clientSecret: ENV.GOOGLE_CLIENT_SECRET,
-        callbackURL: ENV.GOOGLE_CALLBACK_URL,
+        callbackURL: callbackURL,
       },
       async (_accessToken, _refreshToken, profile, done) => {
         try {
@@ -37,6 +41,11 @@ passport.serializeUser((user, done) => {
   done(null, user.id);
 });
 
-passport.deserializeUser((id, done) => {
-  done(null, { id });
+passport.deserializeUser(async (id, done) => {
+  try {
+    const user = await User.findById(id);
+    done(null, user);
+  } catch (error) {
+    done(error, null);
+  }
 });

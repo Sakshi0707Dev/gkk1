@@ -27,9 +27,10 @@ const LoginSuccess = () => {
       }
 
       try {
-        console.log('[AUTH DEBUG] token from URL:', token);
+        console.log('[AUTH] Google OAuth completing, token received');
+        
         localStorage.setItem('token', token);
-        console.log('[AUTH DEBUG] token stored in localStorage:', localStorage.getItem('token'));
+        localStorage.setItem('agri_token', token);
 
         const res = await api.get('/api/auth/me', {
           headers: { Authorization: `Bearer ${token}` },
@@ -41,7 +42,8 @@ const LoginSuccess = () => {
         login(token, user);
         setMessage('Login successful. Redirecting...');
         setTimeout(() => navigate('/', { replace: true }), 600);
-      } catch {
+      } catch (err) {
+        console.error('[AUTH] Google OAuth completion error:', err.message);
         setMessage('Unable to complete login. Please try again.');
         setTimeout(() => navigate('/', { replace: true }), 1200);
       }

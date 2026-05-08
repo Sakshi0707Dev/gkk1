@@ -55,14 +55,18 @@ const getClientUrl = () => {
 };
 
 if (ENV.GOOGLE_CLIENT_ID && ENV.GOOGLE_CLIENT_SECRET) {
-  router.post('/google',        authLimit, googleValidator,     googleAuth);
-  router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+  router.get('/google', (req, res, next) => {
+    console.log('[OAUTH] Google auth started, redirecting to Google...');
+    next();
+  }, passport.authenticate('google', { scope: ['profile', 'email'] }));
+  
   router.get(
     '/google/callback',
     passport.authenticate('google', { session: true, failureRedirect: `${getClientUrl()}/login-success?error=google_auth_failed` }),
     googleOAuthCallback
   );
   console.log('[ROUTES] Google OAuth routes enabled');
+  console.log('[ROUTES] Google callback URL:', ENV.GOOGLE_CALLBACK_URL);
 } else {
   router.post('/google', (_req, res) => {
     res.status(503).json({ success: false, message: 'Google OAuth not configured.' });

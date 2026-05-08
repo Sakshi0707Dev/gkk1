@@ -63,27 +63,32 @@ router.get('/google', (req, res, next) => {
   next();
 }, passport.authenticate('google', { scope: ['profile', 'email'] }));
 
-router.get('/google/callback', (req, res, next) => {
-  console.log('[OAUTH] Callback route hit');
-  console.log('[OAUTH] Google configured:', Boolean(ENV.GOOGLE_CLIENT_ID && ENV.GOOGLE_CLIENT_SECRET));
-  
-  if (!ENV.GOOGLE_CLIENT_ID || !ENV.GOOGLE_CLIENT_SECRET) {
-    console.log('[OAUTH] No credentials - returning 503');
-    return res.status(503).json({ success: false, message: 'Google OAuth not configured.' });
-  }
-  
-  passport.authenticate('google', { 
-    session: true, 
-    failureRedirect: `${getClientUrl()}/login-success?error=google_auth_failed` 
-  })(req, res, (err) => {
-    if (err) {
-      console.error('[OAUTH] Passport authenticate error:', err.message);
-      return res.redirect(`${getClientUrl()}/login-success?error=${encodeURIComponent(err.message)}`);
+router.get('/google/callback',
+  passport.authenticate('google', {
+    session: true,
+    failureRedirect: `${getClientUrl()}/login?error=google_auth_failed`,
+    successRedirect: undefined,
+  }),
+  (req, res) => {
+    console.log('[OAUTH] Callback reached');
+    console.log('[OAUTH] Authenticated user:', req.user?.email || 'none');
+    console.log('[OAUTH] Session ID:', req.sessionID);
+
+    if (!req.user) {
+      console.error('[OAUTH] ERROR: req.user is missing after authenticate!');
+      return res.redirect(`${getClientUrl()}/login?error=no_user`);
     }
-    console.log('[OAUTH] Passport success - calling callback handler');
-    next();
-  });
-}, googleOAuthCallback);
+
+    console.log('[OAUTH] Google OAuth success for:', req.user.email);
+    googleOAuthCallback(req, res, (err) => {
+      if (err) {
+        console.error('[OAUTH] Callback handler error:', err.message);
+        return res.redirect(`${getClientUrl()}/login?error=${encodeURIComponent(err.message)}`);
+      }
+      console.log('[OAUTH] Redirect executed for:', req.user.email);
+    });
+  }
+);
 
 router.post('/refresh-token',           refreshToken);
 router.post('/forgot-password',         forgotValidator,      forgotPassword);

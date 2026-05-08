@@ -3,9 +3,8 @@ import { X, Mail, Lock, User, Eye, EyeOff, Loader2, CheckCircle2, ArrowLeft } fr
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 
-const API_URL = import.meta.env.VITE_API_URL 
-    ? `${import.meta.env.VITE_API_URL}/api/auth`
-    : 'http://localhost:5000/api/auth';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const AUTH_BASE = `${API_URL}/api/auth`;
 
 const GoogleIcon = () => (
     <svg viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg">
@@ -107,7 +106,7 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
         setIsLoading(true);
         try {
             if (view === 'forgot') {
-                await axios.post(`${API_URL}/forgot-password`, { email: formData.email });
+                await axios.post(`${AUTH_BASE}/forgot-password`, { email: formData.email });
                 setSuccessMsg('If an account with that email exists, a password reset link has been sent.');
                 setSuccess(true);
                 setTimeout(() => {
@@ -119,12 +118,12 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
             }
 
             if (view === 'forgotOtp') {
-                await axios.post(`${API_URL}/verify-otp`, {
+                await axios.post(`${AUTH_BASE}/verify-otp`, {
                     email: formData.email,
                     otp: formData.otp,
                 });
 
-                await axios.post(`${API_URL}/reset-password`, {
+                await axios.post(`${AUTH_BASE}/reset-password`, {
                     email: formData.email,
                     newPassword: formData.newPassword,
                 });
@@ -146,7 +145,7 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
                 register: { name: formData.name.trim(), email: formData.email, password: formData.password },
             };
 
-            const res = await axios.post(`${API_URL}${epMap[view]}`, plMap[view]);
+            const res = await axios.post(`${AUTH_BASE}${epMap[view]}`, plMap[view]);
             const token = res?.data?.token || res?.data?.data?.token || res?.data?.data?.accessToken;
             const user = res?.data?.data?.user;
             if (!token || !user) {
@@ -169,9 +168,7 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
 
     const handleGoogleLogin = async () => {
         setError('');
-        const googleAuthUrl = import.meta.env.VITE_API_URL 
-            ? `${import.meta.env.VITE_API_URL}/api/auth/google`
-            : 'http://localhost:5000/api/auth/google';
+        const googleAuthUrl = `${API_URL}/api/auth/google`;
         window.location.href = googleAuthUrl;
     };
 

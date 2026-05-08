@@ -3,9 +3,9 @@ import { X, Mail, Lock, User, Eye, EyeOff, Loader2, CheckCircle2, ArrowLeft } fr
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 
-const API_URL = import.meta.env.VITE_API_URL?.includes('your-backend-url.com')
-    ? 'http://localhost:5000/api/auth'
-    : (import.meta.env.VITE_API_URL || 'http://localhost:5000/api/auth');
+const API_URL = import.meta.env.VITE_API_URL 
+    ? `${import.meta.env.VITE_API_URL}/api/auth`
+    : 'http://localhost:5000/api/auth';
 
 const GoogleIcon = () => (
     <svg viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg">
@@ -169,7 +169,10 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
 
     const handleGoogleLogin = async () => {
         setError('');
-        window.location.href = 'http://localhost:5000/api/auth/google';
+        const googleAuthUrl = import.meta.env.VITE_API_URL 
+            ? `${import.meta.env.VITE_API_URL}/api/auth/google`
+            : 'http://localhost:5000/api/auth/google';
+        window.location.href = googleAuthUrl;
     };
 
     const headerMap = {

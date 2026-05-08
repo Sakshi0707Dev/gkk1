@@ -12,7 +12,6 @@ import Navbar from './Navbar';
 import CartDrawer from './CartDrawer';
 import WishlistDrawer from './WishlistDrawer';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 // Helper: get initials from a name
 const getInitials = (name = '') => {
   const parts = name.trim().split(' ');

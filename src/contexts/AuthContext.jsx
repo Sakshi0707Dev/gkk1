@@ -1,8 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import api from '../utils/api';
 
-const API_URL = 'http://localhost:5000/api/auth';
-
 const AuthContext = createContext(null);
 
 const TOKEN_KEY = 'agri_token';

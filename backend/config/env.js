@@ -17,6 +17,7 @@ export const ENV = {
   JWT_REFRESH_EXPIRES:    process.env.JWT_REFRESH_EXPIRES || '7d',
 
   CLIENT_URL:             process.env.CLIENT_URL || 'http://localhost:5173',
+  PRODUCTION_CLIENT_URL: process.env.PRODUCTION_CLIENT_URL || '',
 
   // Email (Nodemailer / Gmail)
   SMTP_HOST:              process.env.SMTP_HOST || 'smtp.gmail.com',
@@ -28,7 +29,12 @@ export const ENV = {
   // Google OAuth
   GOOGLE_CLIENT_ID:       required('GOOGLE_CLIENT_ID', ''),
   GOOGLE_CLIENT_SECRET:   required('GOOGLE_CLIENT_SECRET', ''),
-  GOOGLE_CALLBACK_URL:    required('GOOGLE_CALLBACK_URL', 'http://localhost:5000/api/auth/google/callback'),
+  GOOGLE_CALLBACK_URL:    
+    process.env.NODE_ENV === 'production' && process.env.GOOGLE_CALLBACK_URL
+      ? process.env.GOOGLE_CALLBACK_URL
+      : required('GOOGLE_CALLBACK_URL', 'http://localhost:5000/api/auth/google/callback'),
+  GOOGLE_CALLBACK_URL_DEV: 'http://localhost:5000/api/auth/google/callback',
+  GOOGLE_CALLBACK_URL_PROD: process.env.GOOGLE_CALLBACK_URL || '',
   SESSION_SECRET:         required('SESSION_SECRET', 'gkk_session_secret_2026_change_me'),
 
   // Twilio OTP (optional)

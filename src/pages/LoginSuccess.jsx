@@ -3,8 +3,6 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../utils/api';
 
-const API_URL = 'http://localhost:5000/api/auth';
-
 const LoginSuccess = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();

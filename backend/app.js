@@ -27,12 +27,23 @@ const app = express();
 app.use(helmet());
 
 // ─── CORS ────────────────────────────────────────────────────────────────────
-app.use(cors({
-  origin: ENV.CLIENT_URL,
+const corsOptions = {
+  origin: (origin, callback) => {
+    const allowedOrigins = [ENV.CLIENT_URL];
+    if (ENV.PRODUCTION_CLIENT_URL) {
+      allowedOrigins.push(ENV.PRODUCTION_CLIENT_URL);
+    }
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('CORS not allowed'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-}));
+};
+app.use(cors(corsOptions));
 
 // ─── Body Parsers ─────────────────────────────────────────────────────────────
 app.use(express.json({ limit: '10kb' }));

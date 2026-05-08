@@ -48,12 +48,18 @@ const authLimit = rateLimit({
 router.post('/register',      authLimit, registerValidator,   register);
 router.post('/login',         authLimit, loginValidator,      login);
 
+const getClientUrl = () => {
+  return ENV.NODE_ENV === 'production' && ENV.PRODUCTION_CLIENT_URL
+    ? ENV.PRODUCTION_CLIENT_URL
+    : ENV.CLIENT_URL;
+};
+
 if (ENV.GOOGLE_CLIENT_ID && ENV.GOOGLE_CLIENT_SECRET) {
   router.post('/google',        authLimit, googleValidator,     googleAuth);
   router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
   router.get(
     '/google/callback',
-    passport.authenticate('google', { session: true, failureRedirect: `${ENV.CLIENT_URL}/login-success?error=google_auth_failed` }),
+    passport.authenticate('google', { session: true, failureRedirect: `${getClientUrl()}/login-success?error=google_auth_failed` }),
     googleOAuthCallback
   );
   console.log('[ROUTES] Google OAuth routes enabled');

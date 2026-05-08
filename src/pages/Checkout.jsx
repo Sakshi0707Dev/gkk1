@@ -33,9 +33,6 @@ const Checkout = () => {
     if (cart.length === 0 || isProcessing) return;
 
     const token = localStorage.getItem('token') || localStorage.getItem('agri_token');
-    if (import.meta.env.DEV) {
-      console.log('[AUTH DEBUG] checkout token present:', Boolean(token));
-    }
     if (!token || token.startsWith('google_token_')) {
       alert('Please login first');
       navigate('/');
@@ -65,8 +62,7 @@ const Checkout = () => {
         pincode: '411001',
       };
 
-      // Step A: Create DB order
-      const orderRes = await api.post('/api/orders', {
+      const orderRes = await api.post('/orders', {
         items,
         totalAmount: totalPrice,
         address,
@@ -78,15 +74,13 @@ const Checkout = () => {
         throw new Error('Unable to create order.');
       }
 
-      // Step B: Create Razorpay order
-      const razorpayRes = await api.post('/api/payment/create-order', { orderId: dbOrderId });
+      const razorpayRes = await api.post('/payment/create-order', { orderId: dbOrderId });
 
       const { razorpayOrderId, amount, keyId } = razorpayRes.data?.data || {};
       if (!razorpayOrderId || !amount || !keyId) {
         throw new Error('Unable to initialize payment.');
       }
 
-      // Step C: Open Razorpay
       const options = {
         key: keyId,
         amount,
@@ -96,22 +90,16 @@ const Checkout = () => {
         description: `Order ${dbOrder.orderId || dbOrderId}`,
         handler: async (response) => {
           try {
-            // Step D: Verify payment
-            await api.post(
-              '/api/payment/verify',
-              {
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
-                orderId: dbOrderId,
-              }
-            );
+            await api.post('/payment/verify', {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              orderId: dbOrderId,
+            });
 
-            // Step E: Success flow
             clearCart();
             setIsOrdered(true);
             navigate('/checkout?success=1', { replace: true });
-            alert('Payment successful! Your order has been placed.');
           } catch {
             alert('Payment verification failed. Please contact support.');
           } finally {
@@ -127,13 +115,12 @@ const Checkout = () => {
 
       const rzp = new window.Razorpay(options);
       rzp.on('payment.failed', () => {
-        // Step F: Failure flow
         alert('Payment failed. Please try again.');
         setIsProcessing(false);
       });
       rzp.open();
     } catch (error) {
-      const errorMessage = error?.response?.data?.message || 'Unable to process payment. Please try again.';
+      const errorMessage = error?.response?.data?.message || error?.message || 'Unable to process payment. Please try again.';
       alert(errorMessage);
       setIsProcessing(false);
     }

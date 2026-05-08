@@ -24,10 +24,10 @@ const UserAvatar = ({ user, size = 'md' }) => {
   const initials = getInitials(user.name);
   const sizeClass = size === 'sm' ? 'w-7 h-7 text-xs' : 'w-9 h-9 text-sm';
 
-  if (user.photoURL) {
+  if (user.avatar || user.photoURL) {
     return (
       <img
-        src={user.photoURL}
+        src={user.avatar || user.photoURL}
         alt={user.name}
         className={`${sizeClass} rounded-full object-cover ring-2 ring-white shadow`}
       />

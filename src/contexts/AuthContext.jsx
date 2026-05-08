@@ -24,7 +24,7 @@ export const AuthProvider = ({ children }) => {
     const token = localStorage.getItem(TOKEN_KEY);
     try {
       if (token && !token.startsWith('google_token_')) {
-        await api.post('/api/auth/logout', {}, {
+        await api.post('/auth/logout', {}, {
           headers: { Authorization: `Bearer ${token}` },
         });
       }
@@ -74,7 +74,7 @@ export const AuthProvider = ({ children }) => {
 
         if (!token.startsWith('google_token_')) {
           try {
-            const res = await api.get('/api/auth/me', {
+            const res = await api.get('/auth/me', {
               headers: { Authorization: `Bearer ${token}` },
             });
             const freshUser = res.data.data.user;

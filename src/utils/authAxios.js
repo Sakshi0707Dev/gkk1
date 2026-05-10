@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL || 'https://gkk1.onrender.com';
 const TOKEN_KEY = 'agri_token';
 const USER_KEY = 'agri_user';
 

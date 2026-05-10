@@ -3,7 +3,7 @@ import { X, Mail, Lock, User, Eye, EyeOff, Loader2, CheckCircle2, ArrowLeft } fr
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL || 'https://gkk1.onrender.com';
 const AUTH_BASE = `${API_URL}/api/auth`;
 
 const GoogleIcon = () => (

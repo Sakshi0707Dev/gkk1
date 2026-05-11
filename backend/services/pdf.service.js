@@ -41,7 +41,14 @@ class PdfService {
       puppeteerConfig.executablePath = ENV.PUPPETEER_EXECUTABLE_PATH;
     }
 
-    this.browser = await puppeteer.launch(puppeteerConfig);
+    try {
+      this.browser = await puppeteer.launch(puppeteerConfig);
+    } catch (err) {
+      if (err.message.includes(' executable is not found') || err.message.includes('No such file')) {
+        console.error('[PDF_SERVICE] Chrome executable not found. Set PUPPETEER_EXECUTABLE_PATH env var.');
+      }
+      throw err;
+    }
     return this.browser;
   }
 

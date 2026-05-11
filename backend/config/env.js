@@ -18,6 +18,7 @@ export const ENV = {
 
   CLIENT_URL:             process.env.CLIENT_URL || 'http://localhost:5173',
   PRODUCTION_CLIENT_URL: process.env.PRODUCTION_CLIENT_URL || '',
+  FRONTEND_URL:           process.env.FRONTEND_URL || '',
 
   // Email (Nodemailer / Gmail)
   SMTP_HOST:              process.env.SMTP_HOST || 'smtp.gmail.com',

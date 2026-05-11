@@ -30,9 +30,8 @@ app.use(helmet());
 const corsOptions = {
   origin: (origin, callback) => {
     const allowedOrigins = [ENV.CLIENT_URL];
-    if (ENV.PRODUCTION_CLIENT_URL) {
-      allowedOrigins.push(ENV.PRODUCTION_CLIENT_URL);
-    }
+    if (ENV.PRODUCTION_CLIENT_URL) allowedOrigins.push(ENV.PRODUCTION_CLIENT_URL);
+    if (ENV.FRONTEND_URL) allowedOrigins.push(ENV.FRONTEND_URL);
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -43,6 +42,8 @@ const corsOptions = {
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 };
+
+app.options('*', cors(corsOptions));
 app.use(cors(corsOptions));
 
 // ─── Body Parsers ─────────────────────────────────────────────────────────────

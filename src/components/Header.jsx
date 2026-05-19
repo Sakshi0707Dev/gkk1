@@ -111,27 +111,31 @@ const Header = () => {
       </div>
 
       {/* Main Header */}
-      <div className="py-3 md:py-4 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full flex items-center justify-between gap-2 md:gap-4">
+      <div className="py-4 md:py-5 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full flex items-center justify-between gap-2 md:gap-4 min-w-0">
         {/* Mobile Menu Toggle */}
         <button
           onClick={toggleMenu}
-          className="lg:hidden p-1.5 text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
+          className="lg:hidden shrink-0 p-1.5 text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
           aria-label="Toggle menu"
         >
           <Menu size={24} />
         </button>
 
-        {/* Logo */}
-        <div className="flex items-center space-x-2 md:space-x-3 shrink-0 cursor-pointer">
+        {/* Logo — height-based sizing so vertical branding is never cropped */}
+        <Link
+          to="/"
+          className="flex items-center gap-2 md:gap-3 min-w-0 max-w-[min(100%,calc(100vw-9.5rem))] sm:max-w-none shrink sm:shrink-0"
+        >
           <img
-            src="/logo.png.jpeg"
-            alt="Gawande Krushi Kendra Logo"
-            className="w-10 h-10 md:w-16 md:h-16 object-contain"
+            src="/logo.png"
+            alt="Gawande Krushi Kendra"
+            decoding="async"
+            className="h-12 md:h-16 w-auto max-w-full min-w-0 object-contain"
           />
-          <span className="text-lg md:text-2xl font-extrabold text-gray-800 tracking-tight hidden xs:block">
+          <span className="text-lg md:text-2xl font-extrabold text-gray-800 tracking-tight hidden xs:block truncate">
             Gawande <span className="text-agri-green">Krushi</span>
           </span>
-        </div>
+        </Link>
 
         {/* Search Bar */}
         <div className="flex-1 max-w-2xl mx-1 md:mx-6 hidden sm:block">
@@ -148,7 +152,7 @@ const Header = () => {
         </div>
 
         {/* Right Icons */}
-        <div className="flex items-center space-x-2 sm:space-x-4 md:space-x-6 text-gray-600">
+        <div className="flex shrink-0 items-center space-x-2 sm:space-x-4 md:space-x-6 text-gray-600">
 
           {/* Language */}
           <div onClick={toggleLanguage} className="relative flex flex-col items-center cursor-pointer group hidden lg:flex">
@@ -303,14 +307,14 @@ const Header = () => {
 
       {/* Mobile Drawer */}
       <div className={`fixed top-0 left-0 bottom-0 w-[280px] bg-white z-[60] lg:hidden transform transition-transform duration-300 ease-in-out shadow-2xl flex flex-col ${isMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-agri-green text-white">
-          <div className="flex items-center space-x-2 min-w-0">
+        <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-agri-green text-white gap-2 min-w-0">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
             <img
-                  src="/logo.png.jpeg"
-                  alt="Logo"
-                  className="w-8 h-8 bg-white p-0.5 rounded-md flex-shrink-0"
-                  onError={(e) => { e.target.src = 'https://via.placeholder.com/64x64?text=Logo'; }}
-                />
+              src="/logo.png"
+              alt="Gawande Krushi Kendra"
+              decoding="async"
+              className="h-10 w-auto max-w-[40%] shrink-0 object-contain bg-white/95 rounded-md px-1 py-0.5 sm:max-w-[7rem]"
+            />
             <div className="min-w-0">
               <span className="text-sm font-semibold leading-tight block break-words max-w-[140px]">Gawande Krushi Kendra</span>
               <span className="text-xs text-gray-200">Since 2006</span>

@@ -197,12 +197,12 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
 
                     {!success && (
                         <div className="relative z-10 flex flex-col items-center gap-2">
-                            <img 
-                            src="/logo.png.jpeg" 
-                            alt="Logo" 
-                            className="w-12 h-12 object-contain bg-white rounded-full p-1 shadow"
-                            onError={(e) => { e.target.src = 'https://via.placeholder.com/48x48?text=Logo'; }}
-                          />
+                            <img
+                              src="/logo.png"
+                              alt="Gawande Krushi Kendra"
+                              decoding="async"
+                              className="h-14 w-auto max-w-[min(100%,12rem)] object-contain bg-white rounded-xl px-2 py-1.5 shadow"
+                            />
                             <h2 className="text-xl font-bold text-white">{title}</h2>
                             <p className="text-sm text-white/80">{sub}</p>
                         </div>

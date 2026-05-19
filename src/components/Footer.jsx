@@ -15,9 +15,10 @@ const Footer = () => {
           <div className="text-center md:text-left">
             <div className="flex items-center justify-center md:justify-start space-x-2 text-white mb-3">
               <img
-                src="/logo.png.jpeg"
-                alt="Gawande Krushi Kendra Logo"
-                className="w-8 h-8 object-contain bg-white p-1 rounded-lg"
+                src="/logo.png"
+                alt="Gawande Krushi Kendra"
+                decoding="async"
+                className="h-10 w-auto max-w-full min-w-0 object-contain bg-white p-1 rounded-lg"
               />
               <span className="text-lg font-extrabold tracking-tight">Gawande Krushi Kendra</span>
             </div>

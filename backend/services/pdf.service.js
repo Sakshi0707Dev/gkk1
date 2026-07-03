@@ -1,4 +1,3 @@
-import puppeteer from 'puppeteer';
 import path from 'path';
 import fs from 'fs/promises';
 import { fileURLToPath } from 'url';
@@ -10,6 +9,7 @@ const __dirname = path.dirname(__filename);
 class PdfService {
   constructor() {
     this.browser = null;
+    this.puppeteer = null;
     this.invoiceDir = path.join(__dirname, '../../uploads/invoices');
   }
 
@@ -21,10 +21,26 @@ class PdfService {
     }
   }
 
+  async loadPuppeteer() {
+    if (this.puppeteer) return this.puppeteer;
+    try {
+      const puppeteer = await import('puppeteer-core');
+      this.puppeteer = puppeteer.default || puppeteer;
+      console.log('[PDF_SERVICE] Puppeteer loaded successfully');
+      return this.puppeteer;
+    } catch (err) {
+      console.error('[PDF_SERVICE] Failed to load Puppeteer:', err.message);
+      console.error('[PDF_SERVICE] PDF generation will be unavailable. Install puppeteer-core to enable it.');
+      throw new Error(`Puppeteer not available: ${err.message}`);
+    }
+  }
+
   async getBrowser() {
     if (this.browser && this.browser.connected) {
       return this.browser;
     }
+
+    const puppeteer = await this.loadPuppeteer();
 
     const puppeteerConfig = {
       headless: true,

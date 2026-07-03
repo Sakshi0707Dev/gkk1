@@ -30,7 +30,7 @@
     "nodemailer": "^6.9.14",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
-    "puppeteer": "^22.0.0",
+    "puppeteer-core": "^22.0.0",
     "razorpay": "^2.9.6",
     "twilio": "^5.2.3"
   },

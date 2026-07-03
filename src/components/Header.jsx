@@ -90,7 +90,11 @@ const Header = () => {
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
-  const handleLoginSuccess = (userData) => {};
+  const handleLoginSuccess = (userData) => {
+    if (userData?.role === 'admin') {
+      window.location.href = '/my-orders';
+    }
+  };
 
   const handleLogout = async () => {
     await logout('/');

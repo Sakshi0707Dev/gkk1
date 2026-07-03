@@ -1,10 +1,5 @@
 import User from '../models/user.model.js';
-import { ENV } from '../config/env.js';
-
-const isAdminEmail = (email) => {
-  const lowerEmail = email.toLowerCase();
-  return ENV.ADMIN_EMAILS.includes(lowerEmail);
-};
+import { ensureAdminRole, resolveRoleForEmail } from '../utils/admin.utils.js';
 
 export const findOrCreateGoogleUser = async ({ googleId, email, name, picture }) => {
   let user = await User.findOne({ $or: [{ googleId }, { email: email.toLowerCase() }] });
@@ -24,18 +19,15 @@ export const findOrCreateGoogleUser = async ({ googleId, email, name, picture })
       user.avatar = picture;
       shouldSave = true;
     }
-    if (isAdminEmail(email) && user.role !== 'admin') {
-      user.role = 'admin';
-      shouldSave = true;
-    }
     if (shouldSave) {
       await user.save();
     }
 
+    await ensureAdminRole(user);
     return user;
   }
 
-  const userRole = isAdminEmail(email) ? 'admin' : 'user';
+  const userRole = resolveRoleForEmail(email);
 
   return User.create({
     name,

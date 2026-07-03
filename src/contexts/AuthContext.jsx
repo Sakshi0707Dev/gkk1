@@ -78,8 +78,10 @@ export const AuthProvider = ({ children }) => {
               headers: { Authorization: `Bearer ${token}` },
             });
             const freshUser = res.data.data.user;
-            if (import.meta.env.DEV) {
-              console.log('[AUTH DEBUG] /auth/me success for:', freshUser?.email);
+            console.log('[AUTH FRONTEND] 9. /auth/me returned user:', freshUser?.email, '| role:', freshUser?.role);
+            console.log('[AUTH FRONTEND]    Previous role from localStorage:', savedUser?.role);
+            if (freshUser?.role !== savedUser?.role) {
+              console.log('[AUTH FRONTEND]    *** ROLE CHANGED from', savedUser?.role, 'to', freshUser?.role, '***');
             }
             setUser(freshUser);
             localStorage.setItem(USER_KEY, JSON.stringify(freshUser));

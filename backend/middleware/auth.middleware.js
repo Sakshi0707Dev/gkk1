@@ -31,13 +31,11 @@ export const protect = asyncHandler(async (req, _res, next) => {
   if (!user) throw new AppError('User belonging to this token no longer exists.', 401);
 
   req.user = user;
-  if (process.env.NODE_ENV !== 'production') {
-    console.log('[AUTH DEBUG] req.user:', {
-      id: req.user._id,
-      email: req.user.email,
-      role: req.user.role,
-    });
-  }
+  console.log('[AUTH] *** protect middleware:');
+  console.log('[AUTH] ***   JWT payload role:', decoded.role);
+  console.log('[AUTH] ***   DB user role:', user.role);
+  console.log('[AUTH] ***   DB user email:', user.email);
+  console.log('[AUTH] ***   Match:', decoded.role === user.role ? 'YES' : 'MISMATCH!');
   next();
 });
 
@@ -46,8 +44,11 @@ export const protect = asyncHandler(async (req, _res, next) => {
  * Usage: restrictTo('admin')
  */
 export const restrictTo = (...roles) => (req, _res, next) => {
+  console.log('[AUTH] restrictTo: required roles:', roles, '| user role:', req.user?.role, '| user email:', req.user?.email);
   if (!roles.includes(req.user.role)) {
+    console.log('[AUTH] restrictTo: ACCESS DENIED for', req.user?.email, 'with role', req.user?.role);
     return next(new AppError('You do not have permission to perform this action.', 403));
   }
+  console.log('[AUTH] restrictTo: ACCESS GRANTED for', req.user?.email);
   next();
 };

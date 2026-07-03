@@ -1,0 +1,4 @@
+[MAIL] Transporter verification failed: Invalid login: 535-5.7.8 Username and Password not accepted. For more information, go to
+535 5.7.8  https://support.google.com/mail/?p=BadCredentials 5a478bee46e88-30f0bb7fd75sm20132844eec.19 - gsmtp
+[SERVER] Email service error: Invalid login: 535-5.7.8 Username and Password not accepted. For more information, go to
+535 5.7.8  https://support.google.com/mail/?p=BadCredentials 5a478bee46e88-30f0bb7fd75sm20132844eec.19 - gsmtp

@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { X, Mail, Lock, User, Eye, EyeOff, Loader2, CheckCircle2, ArrowLeft } from 'lucide-react';
-import axios from 'axios';
+import api from '../utils/api';
 import { useAuth } from '../contexts/AuthContext';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://gkk1.onrender.com';
-const AUTH_BASE = `${API_URL}/api/auth`;
 
 const GoogleIcon = () => (
     <svg viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg">
@@ -106,7 +105,7 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
         setIsLoading(true);
         try {
             if (view === 'forgot') {
-                await axios.post(`${AUTH_BASE}/forgot-password`, { email: formData.email });
+                await api.post('/auth/forgot-password', { email: formData.email });
                 setSuccessMsg('If an account with that email exists, a password reset link has been sent.');
                 setSuccess(true);
                 setTimeout(() => {
@@ -118,12 +117,12 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
             }
 
             if (view === 'forgotOtp') {
-                await axios.post(`${AUTH_BASE}/verify-otp`, {
+                await api.post('/auth/verify-otp', {
                     email: formData.email,
                     otp: formData.otp,
                 });
 
-                await axios.post(`${AUTH_BASE}/reset-password`, {
+                await api.post('/auth/reset-password', {
                     email: formData.email,
                     newPassword: formData.newPassword,
                 });
@@ -145,14 +144,19 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
                 register: { name: formData.name.trim(), email: formData.email, password: formData.password },
             };
 
-            const res = await axios.post(`${AUTH_BASE}${epMap[view]}`, plMap[view]);
+            const res = await api.post(`/auth${epMap[view]}`, plMap[view]);
             const token = res?.data?.token || res?.data?.data?.token || res?.data?.data?.accessToken;
             const user = res?.data?.data?.user;
+            console.log('[AUTH FRONTEND] === LOGIN RESPONSE RECEIVED ===');
+            console.log('[AUTH FRONTEND] Role from server:', user?.role);
+            console.log('[AUTH FRONTEND] Full user from server:', JSON.stringify(user));
+            console.log('[AUTH FRONTEND] Token received:', Boolean(token));
             if (!token || !user) {
                 throw new Error('Invalid login response');
             }
             localStorage.setItem('token', token);
             login(token, user);
+            console.log('[AUTH FRONTEND] 10. Role stored on frontend after login:', user?.role);
             finishLogin(user);
         } catch (err) {
             if (err.message.includes('Network Error') || err.code === 'ECONNREFUSED') {

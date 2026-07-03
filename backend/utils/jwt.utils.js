@@ -22,7 +22,7 @@ export const setRefreshCookie = (res, token) => {
   res.cookie('refreshToken', token, {
     httpOnly: true,
     secure: ENV.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: ENV.NODE_ENV === 'production' ? 'none' : 'lax',
     maxAge: SEVEN_DAYS_MS,
     path: '/api/auth/refresh-token',   // restrict cookie to refresh endpoint
   });
@@ -39,6 +39,7 @@ export const issueTokenPair = (user) => {
     email: user.email,
     role: user.role,
   };
+  console.log('[JWT] issueTokenPair payload:', JSON.stringify(payload));
   return {
     accessToken:  signAccessToken(payload),
     refreshToken: signRefreshToken(payload),

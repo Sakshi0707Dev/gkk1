@@ -6,8 +6,7 @@ import galleryImg from "../assets/gallery.jpeg";
 
 const Gallery = () => {
   const { user } = useAuth();
-  const adminEmails = ["gawandekrushikendra@gmail.com"];
-  const isAdmin = user && adminEmails.includes(user.email);
+  const isAdmin = user?.role === 'admin';
 
   // Real-world shop categories
   const categories = ['All', 'Shop', 'Products', 'Equipment', 'Storage', 'Distribution'];

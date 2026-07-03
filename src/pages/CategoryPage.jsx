@@ -20,7 +20,7 @@ const CategoryPage = () => {
     category: category || ''
   });
 
-  const isAdmin = user?.email === 'gawandekrushikendra@gmail.com';
+  const isAdmin = user?.role === 'admin';
   const filteredProducts = products.filter(p => p.category === category);
   const isInCart = (id) => cart.some(item => item.id === id);
 

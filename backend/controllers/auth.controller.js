@@ -13,6 +13,7 @@ import {
 } from '../services/email.service.js';
 import { verifyGoogleToken } from '../services/google.service.js';
 import { ENV } from '../config/env.js';
+import { isAdminEmail, ensureAdminRole, resolveRoleForEmail } from '../utils/admin.utils.js';
 
 const sendTokenResponse = (res, user, statusCode = 200) => {
   const { accessToken, refreshToken } = issueTokenPair(user);
@@ -25,7 +26,7 @@ const sendTokenResponse = (res, user, statusCode = 200) => {
 
   setRefreshCookie(res, refreshToken);
 
-  res.status(statusCode).json({
+  const responseBody = {
     success: true,
     message: statusCode === 201 ? 'Account created successfully.' : 'Logged in successfully.',
     token: accessToken,
@@ -34,7 +35,13 @@ const sendTokenResponse = (res, user, statusCode = 200) => {
       accessToken,
       user: user.toPublic(),
     },
-  });
+  };
+
+  console.log('[AUTH] *** sendTokenResponse: user.role =', user.role);
+  console.log('[AUTH] *** sendTokenResponse: toPublic().role =', responseBody.data.user.role);
+  console.log('[AUTH] *** sendTokenResponse: full JSON body =', JSON.stringify(responseBody, (key, val) => key === 'token' || key === 'accessToken' ? '[REDACTED]' : val, 2));
+
+  res.status(statusCode).json(responseBody);
 };
 
 export const register = asyncHandler(async (req, res) => {
@@ -47,7 +54,12 @@ export const register = asyncHandler(async (req, res) => {
   const existing = await User.findOne({ email: email.toLowerCase() });
   if (existing) throw new AppError('An account with this email already exists.', 409);
 
-  const user = await User.create({ name: name.trim(), email, password });
+  const user = await User.create({
+    name: name.trim(),
+    email,
+    password,
+    role: resolveRoleForEmail(email),
+  });
 
   sendWelcomeEmail({ to: user.email, name: user.name }).catch(() => {});
 
@@ -88,23 +100,19 @@ export const login = asyncHandler(async (req, res) => {
     throw new AppError('Invalid email or password.', 401);
   }
 
-  // Check admin status AFTER successful authentication and upgrade role if needed
-  const isAdmin = isAdminEmail(user.email);
-  if (isAdmin && user.role !== 'admin') {
-    user.role = 'admin';
-    await user.save();
-    console.log('[AUTH] Upgraded to admin:', user.email);
-  } else if (isAdmin) {
-    console.log('[AUTH] Admin login:', user.email);
-  }
+  await ensureAdminRole(user);
 
-  console.log('[AUTH] Login success:', user.email, '| role:', user.role);
+  console.log('===========================================================');
+  console.log('[AUTH] === LOGIN FLOW TRACE ===');
+  console.log('[AUTH] 1. Login email received from request:', email);
+  console.log('[AUTH] 2. process.env.ADMIN_EMAILS:', JSON.stringify(process.env.ADMIN_EMAILS));
+  console.log('[AUTH] ENV.ADMIN_EMAILS:', ENV.ADMIN_EMAILS);
+  console.log('[AUTH] 3. User.role after ensureAdminRole:', user.role);
+  console.log('[AUTH] 4. Result of isAdminEmail:', isAdminEmail(email));
+  console.log('[AUTH] === END LOGIN FLOW TRACE ===');
+  console.log('===========================================================');
   sendTokenResponse(res, user);
 });
-
-const isAdminEmail = (email) => {
-  return ENV.ADMIN_EMAILS.includes(email.toLowerCase());
-};
 
 export const googleAuth = asyncHandler(async (req, res) => {
   const { idToken } = req.body;
@@ -112,7 +120,7 @@ export const googleAuth = asyncHandler(async (req, res) => {
 
   const { sub: googleId, email, name, picture } = payload;
 
-  const userRole = isAdminEmail(email) ? 'admin' : 'user';
+  const userRole = resolveRoleForEmail(email);
 
   console.log('[AUTH] Google OAuth callback for:', email);
 
@@ -128,11 +136,8 @@ export const googleAuth = asyncHandler(async (req, res) => {
       if (picture && !user.avatar) user.avatar = picture;
       console.log('[AUTH] Linked Google account to existing user:', email);
     }
-    if (isAdminEmail(email) && user.role !== 'admin') {
-      user.role = 'admin';
-      console.log('[AUTH] Upgraded to admin:', email);
-    }
     await user.save();
+    await ensureAdminRole(user);
   } else {
     // New Google user - create account without password
     user = await User.create({
@@ -151,10 +156,13 @@ export const googleAuth = asyncHandler(async (req, res) => {
 });
 
 export const getMe = asyncHandler(async (req, res) => {
+  const publicUser = req.user.toPublic();
+  console.log('[AUTH] *** getMe: returning user with role:', publicUser.role, '| email:', publicUser.email, '| id:', publicUser.id);
+  console.log('[AUTH] *** getMe: full body:', JSON.stringify(publicUser));
   res.json({
     success: true,
     message: 'User retrieved successfully.',
-    data: { user: req.user.toPublic() },
+    data: { user: publicUser },
   });
 });
 
@@ -191,6 +199,9 @@ export const refreshToken = asyncHandler(async (req, res) => {
   }
 
   user.refreshTokens = user.refreshTokens.filter((t) => t !== token);
+  console.log('[AUTH] *** refreshToken: role before ensureAdminRole:', user.role);
+  await ensureAdminRole(user);
+  console.log('[AUTH] *** refreshToken: role after ensureAdminRole:', user.role);
   const { accessToken, refreshToken: newRefreshToken } = issueTokenPair(user);
   user.refreshTokens.push(newRefreshToken);
   await user.save();
@@ -394,6 +405,8 @@ export const googleOAuthCallback = asyncHandler(async (req, res) => {
     console.error('[OAUTH] Callback error: user not found in session');
     throw new AppError('Google authentication failed.', 401);
   }
+
+  await ensureAdminRole(user);
 
   const { accessToken, refreshToken } = issueTokenPair(user);
 

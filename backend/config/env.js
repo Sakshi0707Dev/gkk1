@@ -1,4 +1,32 @@
-import 'dotenv/config';
+import { config } from 'dotenv';
+import { fileURLToPath } from 'url';
+import path from 'path';
+import fs from 'fs';
+
+// ─── RAW DIAGNOSTIC: capture process.env BEFORE any .env file loading ─────────
+console.log('============================================');
+console.log('[DIAG] === ENV LOAD DIAGNOSTICS (BEFORE dotenv) ===');
+console.log('[DIAG] process.cwd():', process.cwd());
+console.log('[DIAG] process.env.ADMIN_EMAILS:', JSON.stringify(process.env.ADMIN_EMAILS));
+console.log('[DIAG] process.env.NODE_ENV:', JSON.stringify(process.env.NODE_ENV));
+console.log('[DIAG] process.env.CLIENT_URL:', JSON.stringify(process.env.CLIENT_URL));
+console.log('[DIAG] process.env.MONGO_URI exists:', !!process.env.MONGO_URI);
+console.log('[DIAG] ENV keys with ADMIN:', Object.keys(process.env).filter(k => k.includes('ADMIN')));
+console.log('============================================');
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const envPath = path.resolve(__dirname, '../.env');
+
+if (fs.existsSync(envPath)) {
+  console.log('[ENV] backend/.env EXISTS, loading...');
+  config({ path: envPath });
+  console.log('[ENV] Loaded backend/.env');
+} else {
+  console.log('[ENV] backend/.env NOT FOUND (expected on Render)');
+}
+
+console.log('[DIAG] === AFTER dotenv load ===');
+console.log('[DIAG] process.env.ADMIN_EMAILS:', JSON.stringify(process.env.ADMIN_EMAILS));
 
 const required = (key, fallback) => {
   const val = process.env[key]?.trim() || fallback;
@@ -30,12 +58,13 @@ export const ENV = {
   // Google OAuth
   GOOGLE_CLIENT_ID:       required('GOOGLE_CLIENT_ID', ''),
   GOOGLE_CLIENT_SECRET:   required('GOOGLE_CLIENT_SECRET', ''),
-  GOOGLE_CALLBACK_URL:    
-    process.env.NODE_ENV === 'production' && process.env.GOOGLE_CALLBACK_URL
-      ? process.env.GOOGLE_CALLBACK_URL
-      : required('GOOGLE_CALLBACK_URL', 'http://localhost:5000/api/auth/google/callback'),
+  GOOGLE_CALLBACK_URL:    process.env.GOOGLE_CALLBACK_URL?.trim() || (
+    process.env.NODE_ENV === 'production'
+      ? 'https://gkk1.onrender.com/api/auth/google/callback'
+      : 'http://localhost:5000/api/auth/google/callback'
+  ),
   GOOGLE_CALLBACK_URL_DEV: 'http://localhost:5000/api/auth/google/callback',
-  GOOGLE_CALLBACK_URL_PROD: process.env.GOOGLE_CALLBACK_URL || '',
+  GOOGLE_CALLBACK_URL_PROD: 'https://gkk1.onrender.com/api/auth/google/callback',
   SESSION_SECRET:         required('SESSION_SECRET', 'gkk_session_secret_2026_change_me'),
 
   // Twilio OTP (optional)
@@ -77,6 +106,10 @@ export const ENV = {
   // Admin Configuration
   ADMIN_EMAILS: (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean),
 };
+
+console.log('[DIAG] ENV.ADMIN_EMAILS:', ENV.ADMIN_EMAILS.length > 0 ? ENV.ADMIN_EMAILS : '(EMPTY)');
+console.log('[DIAG] Raw process.env.ADMIN_EMAILS:', JSON.stringify(process.env.ADMIN_EMAILS));
+console.log('[DIAG] Source of ADMIN_EMAILS:', process.env.ADMIN_EMAILS ? (fs.existsSync(envPath) ? 'backend/.env file' : 'system env var (Render dashboard)') : 'NOT SET');
 
 if (ENV.GOOGLE_CLIENT_ID) {
   console.log('[ENV] Google OAuth ID loaded:', ENV.GOOGLE_CLIENT_ID.substring(0, 20) + '...');

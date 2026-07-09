@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
 
 const AdminLogin = () => {
+  console.log("AdminLogin rendered");
   const navigate = useNavigate();
   const { isAdminAuthenticated, adminLogin } = useAdminAuth();
 
@@ -20,15 +21,21 @@ const AdminLogin = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    console.log('1. submit start', { email, password });
 
-    if (!email.trim() || !password.trim()) {
+    const trimmedEmail = (email || '').trim();
+    const trimmedPassword = (password || '').trim();
+
+    if (!trimmedEmail || !trimmedPassword) {
+      console.log('6. validation failed', { email, password, trimmedEmail, trimmedPassword });
       setError('Email and password are required.');
       return;
     }
 
     setLoading(true);
+    console.log('2. calling adminLogin', { email: trimmedEmail, password: trimmedPassword });
     try {
-      await adminLogin(email, password);
+      await adminLogin(trimmedEmail, trimmedPassword);
       navigate('/admin');
     } catch (err) {
       setError(err?.response?.data?.message || 'Login failed. Check your credentials.');
@@ -54,7 +61,7 @@ const AdminLogin = () => {
             <p className="text-sm text-gray-500 mt-1">Gawande Krushi Kendra</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={(e) => { console.log("FORM SUBMIT"); handleSubmit(e); }} className="space-y-5">
             {error && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 font-semibold">
                 {error}
@@ -85,7 +92,11 @@ const AdminLogin = () => {
             </div>
 
             <button
-              type="submit"
+              type="button"
+              onClick={() => {
+                console.log("BUTTON CLICK");
+                handleSubmit({ preventDefault() { console.log("preventDefault called"); } });
+              }}
               disabled={loading}
               className="w-full py-3 rounded-xl font-bold text-white bg-agri-green hover:bg-green-700 disabled:opacity-60 transition-colors"
             >

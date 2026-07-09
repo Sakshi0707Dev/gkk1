@@ -66,7 +66,7 @@ router.get('/google', (req, res, next) => {
 router.get('/google/callback',
   passport.authenticate('google', {
     session: true,
-    failureRedirect: `${getClientUrl()}/login?error=google_auth_failed`,
+    failureRedirect: `${getClientUrl()}/?google_error=auth_failed`,
     successRedirect: undefined,
   }),
   (req, res) => {
@@ -76,14 +76,14 @@ router.get('/google/callback',
 
     if (!req.user) {
       console.error('[OAUTH] ERROR: req.user is missing after authenticate!');
-      return res.redirect(`${getClientUrl()}/login?error=no_user`);
+      return res.redirect(`${getClientUrl()}/?google_error=no_user`);
     }
 
     console.log('[OAUTH] Google OAuth success for:', req.user.email);
     googleOAuthCallback(req, res, (err) => {
       if (err) {
         console.error('[OAUTH] Callback handler error:', err.message);
-        return res.redirect(`${getClientUrl()}/login?error=${encodeURIComponent(err.message)}`);
+        return res.redirect(`${getClientUrl()}/?google_error=${encodeURIComponent(err.message)}`);
       }
       console.log('[OAUTH] Redirect executed for:', req.user.email);
     });

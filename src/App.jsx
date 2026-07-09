@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Header from './components/Header';
+import WebsiteLayout from './components/WebsiteLayout';
 import HeroSection from './components/HeroSection';
 import ShopByCategory from './components/ShopByCategory';
 import TrustSection from './components/TrustSection';
@@ -17,58 +17,82 @@ import CategoryProducts from './pages/CategoryProducts';
 import Checkout from './pages/Checkout';
 import LoginSuccess from './pages/LoginSuccess';
 import MyOrders from './pages/MyOrders';
-import Footer from './components/Footer';
-import WhatsAppButton from './components/WhatsAppButton';
 
 import { LanguageProvider } from './i18n/LanguageContext';
 import { AuthProvider } from './contexts/AuthContext';
+import { AdminAuthProvider } from './contexts/AdminAuthContext';
 import { CartProvider } from './context/CartContext';
 import { WishlistProvider } from './context/WishlistContext';
+
+import AdminLogin from './pages/admin/AdminLogin';
+import AdminLayout from './pages/admin/AdminLayout';
+import AdminDashboard from './pages/admin/Dashboard';
+import AdminProductsPage from './pages/admin/Products';
+import AdminCategories from './pages/admin/Categories';
+import AdminBrands from './pages/admin/Brands';
+import AdminOrdersPage from './pages/admin/Orders';
+import AdminCustomers from './pages/admin/Customers';
+import AdminBanners from './pages/admin/Banners';
+import AdminAnalytics from './pages/admin/Analytics';
+import AdminSettings from './pages/admin/Settings';
 
 function App() {
   return (
     <AuthProvider>
-      <LanguageProvider>
-        <WishlistProvider>
-          <CartProvider>
-            <Router>
-              <div className="font-sans min-h-screen bg-white text-gray-900 selection:bg-agri-green selection:text-white">
-                <Header />
-
-                <main>
+      <AdminAuthProvider>
+        <LanguageProvider>
+          <WishlistProvider>
+            <CartProvider>
+              <Router>
+                <div className="font-sans min-h-screen bg-white text-gray-900 selection:bg-agri-green selection:text-white">
                   <Routes>
-                    <Route path="/" element={
-                      <>
-                        <HeroSection />
-                        <ShopByCategory />
-                        <TrustSection />
-                        <FeaturedProducts />
-                        <ExpertSupport />
-                      </>
-                    } />
-                    <Route path="/shipping-policy" element={<ShippingPolicy />} />
-                    <Route path="/about" element={<AboutUs />} />
-                    <Route path="/gallery" element={<Gallery />} />
-                    <Route path="/weather" element={<Weather />} />
-                    <Route path="/blog" element={<BlogList />} />
-                    <Route path="/blog/:id" element={<BlogDetail />} />
-                    <Route path="/schemes" element={<GovernmentSchemes />} />
-                    <Route path="/category/:category" element={<CategoryProducts />} />
-                    <Route path="/checkout" element={<Checkout />} />
-                    <Route path="/login-success" element={<LoginSuccess />} />
-                    <Route path="/my-orders" element={<MyOrders />} />
-                    <Route path="/tips" element={<BlogList />} />
-                  </Routes>
-                </main>
+                    {/* ─── Customer Routes (with Header/Footer/WhatsApp) ─── */}
+                    <Route element={<WebsiteLayout />}>
+                      <Route path="/" element={
+                        <>
+                          <HeroSection />
+                          <ShopByCategory />
+                          <TrustSection />
+                          <FeaturedProducts />
+                          <ExpertSupport />
+                        </>
+                      } />
+                      <Route path="/shipping-policy" element={<ShippingPolicy />} />
+                      <Route path="/about" element={<AboutUs />} />
+                      <Route path="/gallery" element={<Gallery />} />
+                      <Route path="/weather" element={<Weather />} />
+                      <Route path="/blog" element={<BlogList />} />
+                      <Route path="/blog/:id" element={<BlogDetail />} />
+                      <Route path="/schemes" element={<GovernmentSchemes />} />
+                      <Route path="/category/:category" element={<CategoryProducts />} />
+                      <Route path="/checkout" element={<Checkout />} />
+                      <Route path="/login-success" element={<LoginSuccess />} />
+                      <Route path="/my-orders" element={<MyOrders />} />
+                      <Route path="/tips" element={<BlogList />} />
+                    </Route>
 
-                <Footer />
-                
-                <WhatsAppButton />
-              </div>
-            </Router>
-          </CartProvider>
-        </WishlistProvider>
-      </LanguageProvider>
+                    {/* ─── Admin Auth ─── */}
+                    <Route path="/admin/login" element={<AdminLogin />} />
+
+                    {/* ─── Admin Routes (with AdminLayout) ─── */}
+                    <Route path="/admin" element={<AdminLayout />}>
+                      <Route index element={<AdminDashboard />} />
+                      <Route path="products" element={<AdminProductsPage />} />
+                      <Route path="categories" element={<AdminCategories />} />
+                      <Route path="brands" element={<AdminBrands />} />
+                      <Route path="orders" element={<AdminOrdersPage />} />
+                      <Route path="customers" element={<AdminCustomers />} />
+                      <Route path="banners" element={<AdminBanners />} />
+                      <Route path="analytics" element={<AdminAnalytics />} />
+                      <Route path="settings" element={<AdminSettings />} />
+                    </Route>
+                  </Routes>
+                </div>
+              </Router>
+            </CartProvider>
+          </WishlistProvider>
+        </LanguageProvider>
+      </AdminAuthProvider>
     </AuthProvider>
   );
 }

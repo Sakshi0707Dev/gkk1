@@ -27,10 +27,7 @@ const LoginSuccess = () => {
       }
 
       try {
-        console.log('[AUTH] Google OAuth completing, token received');
-        
         localStorage.setItem('token', token);
-        localStorage.setItem('agri_token', token);
 
         const res = await api.get('/auth/me', {
           headers: { Authorization: `Bearer ${token}` },

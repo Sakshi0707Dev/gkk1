@@ -14,6 +14,10 @@ import orderRoutes from './routes/order.routes.js';
 import paymentRoutes from './routes/payment.routes.js';
 import productRoutes from './routes/product.routes.js';
 import invoiceRoutes from './routes/invoice.routes.js';
+import adminRoutes from './routes/admin.routes.js';
+import bannerRoutes from './routes/banner.routes.js';
+import categoryRoutes from './routes/category.routes.js';
+import brandRoutes from './routes/brand.routes.js';
 import { errorHandler } from './middleware/error.middleware.js';
 import { ENV } from './config/env.js';
 import './config/passport.js';
@@ -85,6 +89,10 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/invoices', invoiceRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/banners', bannerRoutes);
+app.use('/api/categories', categoryRoutes);
+app.use('/api/brands', brandRoutes);
 
 // ─── Health Check ─────────────────────────────────────────────────────────────
 app.get('/api/health', (_req, res) => res.json({ success: true, message: 'API is healthy.' }));

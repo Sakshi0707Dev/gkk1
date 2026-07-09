@@ -3,8 +3,7 @@ import api from '../utils/api';
 
 const AuthContext = createContext(null);
 
-const TOKEN_KEY = 'agri_token';
-const PAYMENT_TOKEN_KEY = 'token';
+const TOKEN_KEY = 'token';
 const USER_KEY = 'agri_user';
 
 export const AuthProvider = ({ children }) => {
@@ -14,7 +13,6 @@ export const AuthProvider = ({ children }) => {
 
   const clearAuth = useCallback(() => {
     localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(PAYMENT_TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
     setUser(null);
     setIsAuthenticated(false);
@@ -40,7 +38,6 @@ export const AuthProvider = ({ children }) => {
 
   const login = useCallback((token, userData) => {
     localStorage.setItem(TOKEN_KEY, token);
-    localStorage.setItem(PAYMENT_TOKEN_KEY, token);
     localStorage.setItem(USER_KEY, JSON.stringify(userData));
     setUser(userData);
     setIsAuthenticated(true);
@@ -51,7 +48,7 @@ export const AuthProvider = ({ children }) => {
       setIsLoading(true);
       try {
         const savedUserRaw = localStorage.getItem(USER_KEY);
-        const token = localStorage.getItem(PAYMENT_TOKEN_KEY) || localStorage.getItem(TOKEN_KEY);
+        const token = localStorage.getItem(TOKEN_KEY);
 
         if (!savedUserRaw || !token) {
           setIsLoading(false);
@@ -63,7 +60,6 @@ export const AuthProvider = ({ children }) => {
           savedUser = JSON.parse(savedUserRaw);
         } catch {
           localStorage.removeItem(TOKEN_KEY);
-          localStorage.removeItem(PAYMENT_TOKEN_KEY);
           localStorage.removeItem(USER_KEY);
           setIsLoading(false);
           return;
@@ -78,11 +74,6 @@ export const AuthProvider = ({ children }) => {
               headers: { Authorization: `Bearer ${token}` },
             });
             const freshUser = res.data.data.user;
-            console.log('[AUTH FRONTEND] 9. /auth/me returned user:', freshUser?.email, '| role:', freshUser?.role);
-            console.log('[AUTH FRONTEND]    Previous role from localStorage:', savedUser?.role);
-            if (freshUser?.role !== savedUser?.role) {
-              console.log('[AUTH FRONTEND]    *** ROLE CHANGED from', savedUser?.role, 'to', freshUser?.role, '***');
-            }
             setUser(freshUser);
             localStorage.setItem(USER_KEY, JSON.stringify(freshUser));
           } catch {

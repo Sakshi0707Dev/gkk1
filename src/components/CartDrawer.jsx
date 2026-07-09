@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { X, ShoppingBag, Plus, Minus, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
@@ -6,10 +6,12 @@ import { useCart } from '../context/CartContext';
 const CartDrawer = ({ isOpen, onClose }) => {
   const { cart, removeFromCart, increaseQuantity, decreaseQuantity, cartTotal } = useCart();
 
-  const totalPrice = cart.reduce((sum, item) => {
-    const price = parseInt(item.price.replace(/[^\d]/g, ''));
-    return sum + price * item.quantity;
-  }, 0);
+  const totalPrice = useMemo(() =>
+    cart.reduce((sum, item) => {
+      const price = parseInt(item.price.replace(/[^\d]/g, ''));
+      return sum + price * item.quantity;
+    }, 0),
+  [cart]);
 
   if (!isOpen) return null;
 

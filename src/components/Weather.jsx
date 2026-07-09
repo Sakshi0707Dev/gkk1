@@ -16,7 +16,7 @@ const Weather = () => {
     setError('');
 
     try {
-      const API_KEY = '4d0c46e6d7b03d5e5b17e65913d7d7d1';
+      const API_KEY = import.meta.env.VITE_OPENWEATHER_API_KEY;
       const response = await fetch(
         `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&appid=${API_KEY}&units=metric`
       );

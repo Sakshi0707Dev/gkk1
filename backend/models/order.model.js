@@ -43,15 +43,30 @@ const addressSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    addressLine2: {
+      type: String,
+      trim: true,
+      default: '',
+    },
     city: {
       type: String,
       required: true,
       trim: true,
     },
+    state: {
+      type: String,
+      trim: true,
+      default: '',
+    },
     pincode: {
       type: String,
       required: true,
       trim: true,
+    },
+    landmark: {
+      type: String,
+      trim: true,
+      default: '',
     },
   },
   { _id: false }
@@ -100,7 +115,7 @@ const orderSchema = new mongoose.Schema({
   },
   orderStatus: {
     type: String,
-    enum: ['placed', 'confirmed', 'shipped', 'delivered'],
+    enum: ['placed', 'confirmed', 'packed', 'shipped', 'outfordelivery', 'delivered', 'cancelled'],
     default: 'placed',
     required: true,
   },
@@ -108,9 +123,13 @@ const orderSchema = new mongoose.Schema({
     {
       status: {
         type: String,
-        enum: ['placed', 'confirmed', 'shipped', 'delivered'],
+        enum: ['placed', 'confirmed', 'packed', 'shipped', 'outfordelivery', 'delivered', 'cancelled'],
       },
       date: {
+        type: Date,
+        default: Date.now,
+      },
+      changedAt: {
         type: Date,
         default: Date.now,
       },
@@ -132,11 +151,46 @@ const orderSchema = new mongoose.Schema({
   },
   paymentMethod: {
     type: String,
+    enum: ['COD', 'UPI', null],
     default: null,
   },
   razorpaySignature: {
     type: String,
     default: null,
+  },
+  shippingCost: {
+    type: Number,
+    default: 0,
+    min: 0,
+  },
+  subtotal: {
+    type: Number,
+    default: 0,
+    min: 0,
+  },
+  total: {
+    type: Number,
+    default: 0,
+    min: 0,
+  },
+  estimatedDelivery: {
+    type: Date,
+    default: null,
+  },
+  courier: {
+    type: String,
+    trim: true,
+    default: '',
+  },
+  trackingNumber: {
+    type: String,
+    trim: true,
+    default: '',
+  },
+  trackingUrl: {
+    type: String,
+    trim: true,
+    default: '',
   },
   trackingId: {
     type: String,

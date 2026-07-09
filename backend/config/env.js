@@ -3,17 +3,6 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 import fs from 'fs';
 
-// ─── RAW DIAGNOSTIC: capture process.env BEFORE any .env file loading ─────────
-console.log('============================================');
-console.log('[DIAG] === ENV LOAD DIAGNOSTICS (BEFORE dotenv) ===');
-console.log('[DIAG] process.cwd():', process.cwd());
-console.log('[DIAG] process.env.ADMIN_EMAILS:', JSON.stringify(process.env.ADMIN_EMAILS));
-console.log('[DIAG] process.env.NODE_ENV:', JSON.stringify(process.env.NODE_ENV));
-console.log('[DIAG] process.env.CLIENT_URL:', JSON.stringify(process.env.CLIENT_URL));
-console.log('[DIAG] process.env.MONGO_URI exists:', !!process.env.MONGO_URI);
-console.log('[DIAG] ENV keys with ADMIN:', Object.keys(process.env).filter(k => k.includes('ADMIN')));
-console.log('============================================');
-
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const envPath = path.resolve(__dirname, '../.env');
 
@@ -24,9 +13,6 @@ if (fs.existsSync(envPath)) {
 } else {
   console.log('[ENV] backend/.env NOT FOUND (expected on Render)');
 }
-
-console.log('[DIAG] === AFTER dotenv load ===');
-console.log('[DIAG] process.env.ADMIN_EMAILS:', JSON.stringify(process.env.ADMIN_EMAILS));
 
 const required = (key, fallback) => {
   const val = process.env[key]?.trim() || fallback;
@@ -103,13 +89,15 @@ export const ENV = {
   // Invoice Automation
   AUTO_GENERATE_INVOICE: process.env.AUTO_GENERATE_INVOICE !== 'false',
 
-  // Admin Configuration
+  // Admin Configuration (existing — email-based role promotion)
   ADMIN_EMAILS: (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean),
-};
 
-console.log('[DIAG] ENV.ADMIN_EMAILS:', ENV.ADMIN_EMAILS.length > 0 ? ENV.ADMIN_EMAILS : '(EMPTY)');
-console.log('[DIAG] Raw process.env.ADMIN_EMAILS:', JSON.stringify(process.env.ADMIN_EMAILS));
-console.log('[DIAG] Source of ADMIN_EMAILS:', process.env.ADMIN_EMAILS ? (fs.existsSync(envPath) ? 'backend/.env file' : 'system env var (Render dashboard)') : 'NOT SET');
+  // Dedicated Admin Auth (separate from customer auth)
+  ADMIN_EMAIL:            required('ADMIN_EMAIL', ''),
+  ADMIN_PASSWORD_HASH:    required('ADMIN_PASSWORD_HASH', ''),
+  ADMIN_JWT_SECRET:       required('ADMIN_JWT_SECRET', 'admin_jwt_secret_change_me'),
+  ADMIN_JWT_EXPIRES:      process.env.ADMIN_JWT_EXPIRES || '2h',
+};
 
 if (ENV.GOOGLE_CLIENT_ID) {
   console.log('[ENV] Google OAuth ID loaded:', ENV.GOOGLE_CLIENT_ID.substring(0, 20) + '...');

@@ -26,19 +26,12 @@ const CategoryProducts = () => {
       setLoading(true);
       setError('');
       try {
-        // DEBUG LOG: Log category from request
-        console.log('Frontend requesting products for category:', category);
-
         const res = await api.get('/products', { params: { category } });
         const apiProducts = res.data?.data?.products || [];
-        
-        // DEBUG LOG: Log products returned from API
-        console.log(`API returned ${apiProducts.length} products for ${category}`);
 
         if (apiProducts.length > 0) {
           setProducts(apiProducts);
         } else {
-          // STRICT FILTERING: Use exact match only, no aliases
           const fallbackProducts = initialProducts
             .filter((p) => p.category === category)
             .map((p) => ({
@@ -48,13 +41,11 @@ const CategoryProducts = () => {
               image: p.image,
               category: p.category,
             }));
-          
-          console.log(`Fallback filtering found ${fallbackProducts.length} products for ${category}`);
+
           setProducts(fallbackProducts);
         }
       } catch (err) {
         console.error('Error fetching products:', err);
-        // STRICT FILTERING: Use exact match only, no aliases
         const fallbackProducts = initialProducts
           .filter((p) => p.category === category)
           .map((p) => ({
@@ -111,7 +102,7 @@ const CategoryProducts = () => {
                     id: product._id,
                     name: product.name,
                     price: `₹ ${Number(product.price || 0).toLocaleString()}`,
-                    image: product.image,
+                    image: product.images?.[0] || product.image,
                   })}
                   className="absolute top-4 right-4 z-10 p-2 bg-white/80 backdrop-blur-sm rounded-full shadow-sm hover:bg-white transition-all group/wishlist"
                 >
@@ -121,7 +112,7 @@ const CategoryProducts = () => {
                   />
                 </button>
                 <img
-                  src={product.image || 'https://via.placeholder.com/400x300?text=No+Image'}
+                  src={product.images?.[0] || product.image || 'https://via.placeholder.com/400x300?text=No+Image'}
                   alt={product.name}
                   className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500"
                   onError={(e) => {
@@ -142,7 +133,7 @@ const CategoryProducts = () => {
                       id: product._id,
                       name: product.name,
                       price: `₹ ${Number(product.price || 0).toLocaleString()}`,
-                      image: product.image || 'https://via.placeholder.com/150?text=No+Image',
+                      image: product.images?.[0] || product.image || 'https://via.placeholder.com/150?text=No+Image',
                       category: product.category,
                     })}
                     className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-bold transition-all ${

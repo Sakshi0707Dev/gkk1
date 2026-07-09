@@ -147,16 +147,11 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
             const res = await api.post(`/auth${epMap[view]}`, plMap[view]);
             const token = res?.data?.token || res?.data?.data?.token || res?.data?.data?.accessToken;
             const user = res?.data?.data?.user;
-            console.log('[AUTH FRONTEND] === LOGIN RESPONSE RECEIVED ===');
-            console.log('[AUTH FRONTEND] Role from server:', user?.role);
-            console.log('[AUTH FRONTEND] Full user from server:', JSON.stringify(user));
-            console.log('[AUTH FRONTEND] Token received:', Boolean(token));
             if (!token || !user) {
                 throw new Error('Invalid login response');
             }
             localStorage.setItem('token', token);
             login(token, user);
-            console.log('[AUTH FRONTEND] 10. Role stored on frontend after login:', user?.role);
             finishLogin(user);
         } catch (err) {
             if (err.message.includes('Network Error') || err.code === 'ECONNREFUSED') {

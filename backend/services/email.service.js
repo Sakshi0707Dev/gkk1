@@ -89,7 +89,6 @@ export const sendPasswordResetOTPEmail = async ({ to, name, otp }) => {
   const transport = getTransporter();
   if (!transport) {
     console.warn('[MAIL] No transporter - skipping OTP');
-    console.log(`[MAIL DEBUG] OTP for ${to}: ${otp}`);
     return { skipped: true };
   }
 

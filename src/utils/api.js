@@ -10,20 +10,13 @@ const api = axios.create({
 const setStoredToken = (token) => {
   if (!token) return;
   localStorage.setItem('token', token);
-  localStorage.setItem('agri_token', token);
 };
 
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token') || localStorage.getItem('agri_token');
-    if (import.meta.env.DEV) {
-      console.log('[AUTH DEBUG] token present:', Boolean(token));
-    }
+    const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-    }
-    if (import.meta.env.DEV) {
-      console.log('[AUTH DEBUG] request headers:', config.headers);
     }
     return config;
   },
@@ -54,14 +47,9 @@ api.interceptors.response.use(
         originalRequest.headers = originalRequest.headers || {};
         originalRequest.headers.Authorization = `Bearer ${newToken}`;
 
-        if (import.meta.env.DEV) {
-          console.log('[AUTH DEBUG] access token refreshed');
-        }
-
         return api(originalRequest);
       } catch (refreshError) {
         localStorage.removeItem('token');
-        localStorage.removeItem('agri_token');
         localStorage.removeItem('agri_user');
         return Promise.reject(refreshError);
       }

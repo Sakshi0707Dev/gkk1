@@ -79,7 +79,11 @@ const Footer = () => {
         {/* Bottom Bar */}
         <div className="border-t border-gray-800 mt-6 pt-4 text-center text-xs text-gray-500 flex flex-col md:flex-row justify-between items-center gap-2">
           <p>&copy; {new Date().getFullYear()} {t('rights')}</p>
-          <span>{t('designed')}</span>
+          <div className="flex items-center gap-3">
+            <Link to="/admin/login" className="hover:text-agri-green transition-colors font-medium">Admin Login</Link>
+            <span className="text-gray-700">|</span>
+            <span>{t('designed')}</span>
+          </div>
         </div>
       </div>
     </footer>

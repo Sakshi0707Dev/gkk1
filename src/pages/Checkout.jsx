@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { CheckCircle, ArrowLeft, ShoppingBag, CreditCard } from 'lucide-react';
+import { CheckCircle, ArrowLeft, ShoppingBag, CreditCard, MapPin, Phone, User } from 'lucide-react';
 import api from '../utils/api';
 
 const Checkout = () => {
@@ -13,10 +13,47 @@ const Checkout = () => {
   const [isOrdered, setIsOrdered] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const totalPrice = cart.reduce((sum, item) => {
-    const price = parseInt(item.price.replace(/[^\d]/g, ''));
-    return sum + price * item.quantity;
-  }, 0);
+  const [address, setAddress] = useState({
+    name: user?.name || '',
+    phone: user?.phone || '',
+    addressLine: '',
+    addressLine2: '',
+    city: '',
+    state: '',
+    pincode: '',
+    landmark: '',
+  });
+
+  const [paymentMethod, setPaymentMethod] = useState('');
+  const [addressError, setAddressError] = useState('');
+
+  const handlePaymentMethodChange = (value) => {
+    setPaymentMethod(value);
+    setAddressError('');
+  };
+
+  const updateAddress = (field, value) => {
+    setAddress((prev) => ({ ...prev, [field]: value }));
+    setAddressError('');
+  };
+
+  const validateForm = () => {
+    if (!address.name.trim()) return 'Full name is required.';
+    if (!address.phone.trim() || !/^\d{10}$/.test(address.phone.replace(/\D/g, ''))) return 'Valid 10-digit phone number is required.';
+    if (!address.addressLine.trim()) return 'Address is required.';
+    if (!address.city.trim()) return 'City is required.';
+    if (!address.state.trim()) return 'State is required.';
+    if (!address.pincode.trim() || !/^\d{6}$/.test(address.pincode.replace(/\D/g, ''))) return 'Valid 6-digit pincode is required.';
+    if (!paymentMethod) return 'Please select a payment method.';
+    return '';
+  };
+
+  const totalPrice = useMemo(() =>
+    cart.reduce((sum, item) => {
+      const price = parseInt(item.price.replace(/[^\d]/g, ''));
+      return sum + price * item.quantity;
+    }, 0),
+  [cart]);
 
   const toObjectIdLike = (value) => {
     const hex = String(value)
@@ -32,14 +69,20 @@ const Checkout = () => {
   const handlePayment = async () => {
     if (cart.length === 0 || isProcessing) return;
 
-    const token = localStorage.getItem('token') || localStorage.getItem('agri_token');
+    const validationError = validateForm();
+    if (validationError) {
+      setAddressError(validationError);
+      return;
+    }
+
+    const token = localStorage.getItem('token');
     if (!token || token.startsWith('google_token_')) {
       alert('Please login first');
       navigate('/');
       return;
     }
 
-    if (!window.Razorpay) {
+    if (paymentMethod === 'UPI' && !window.Razorpay) {
       alert('Payment gateway failed to load. Please refresh and try again.');
       return;
     }
@@ -54,24 +97,35 @@ const Checkout = () => {
         quantity: item.quantity,
       }));
 
-      const address = {
-        name: user?.name || 'Customer',
-        phone: user?.phone || '9999999999',
-        addressLine: 'Address not provided',
-        city: 'Pune',
-        pincode: '411001',
+      const shipAddress = {
+        name: address.name.trim(),
+        phone: address.phone.trim(),
+        addressLine: address.addressLine.trim(),
+        addressLine2: address.addressLine2.trim(),
+        city: address.city.trim(),
+        state: address.state.trim(),
+        pincode: address.pincode.trim(),
+        landmark: address.landmark.trim(),
       };
 
       const orderRes = await api.post('/orders', {
         items,
         totalAmount: totalPrice,
-        address,
+        address: shipAddress,
+        paymentMethod,
       });
 
       const dbOrder = orderRes.data?.data?.order;
       const dbOrderId = dbOrder?._id;
       if (!dbOrderId) {
         throw new Error('Unable to create order.');
+      }
+
+      if (paymentMethod === 'COD') {
+        clearCart();
+        setIsOrdered(true);
+        navigate('/checkout?success=1', { replace: true });
+        return;
       }
 
       const razorpayRes = await api.post('/payment/create-order', { orderId: dbOrderId });
@@ -196,6 +250,111 @@ const Checkout = () => {
           </div>
         </div>
 
+        {/* Shipping Address */}
+        <div className="lg:col-span-2">
+          <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-gray-100">
+            <h2 className="text-2xl font-black text-gray-900 mb-6 flex items-center gap-3">
+              <MapPin className="text-agri-green" />
+              Shipping Address
+            </h2>
+
+            {addressError && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 font-semibold">
+                {addressError}
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Full Name *</label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                  <input
+                    type="text"
+                    value={address.name}
+                    onChange={(e) => updateAddress('name', e.target.value)}
+                    placeholder="Recipient name"
+                    className="w-full pl-9 pr-4 py-2.5 text-sm bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-agri-green/25 focus:border-agri-green outline-none"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Phone *</label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                  <input
+                    type="tel"
+                    value={address.phone}
+                    onChange={(e) => updateAddress('phone', e.target.value.replace(/\D/g, '').slice(0, 10))}
+                    placeholder="10-digit mobile number"
+                    className="w-full pl-9 pr-4 py-2.5 text-sm bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-agri-green/25 focus:border-agri-green outline-none"
+                  />
+                </div>
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Address *</label>
+                <input
+                  type="text"
+                  value={address.addressLine}
+                  onChange={(e) => updateAddress('addressLine', e.target.value)}
+                  placeholder="House number, street, area"
+                  className="w-full px-4 py-2.5 text-sm bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-agri-green/25 focus:border-agri-green outline-none"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Address Line 2</label>
+                <input
+                  type="text"
+                  value={address.addressLine2}
+                  onChange={(e) => updateAddress('addressLine2', e.target.value)}
+                  placeholder="Apartment, suite, unit (optional)"
+                  className="w-full px-4 py-2.5 text-sm bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-agri-green/25 focus:border-agri-green outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">City *</label>
+                <input
+                  type="text"
+                  value={address.city}
+                  onChange={(e) => updateAddress('city', e.target.value)}
+                  placeholder="City"
+                  className="w-full px-4 py-2.5 text-sm bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-agri-green/25 focus:border-agri-green outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">State *</label>
+                <input
+                  type="text"
+                  value={address.state}
+                  onChange={(e) => updateAddress('state', e.target.value)}
+                  placeholder="State"
+                  className="w-full px-4 py-2.5 text-sm bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-agri-green/25 focus:border-agri-green outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Pincode *</label>
+                <input
+                  type="text"
+                  value={address.pincode}
+                  onChange={(e) => updateAddress('pincode', e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="6-digit pincode"
+                  className="w-full px-4 py-2.5 text-sm bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-agri-green/25 focus:border-agri-green outline-none"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Landmark</label>
+                <input
+                  type="text"
+                  value={address.landmark}
+                  onChange={(e) => updateAddress('landmark', e.target.value)}
+                  placeholder="Nearby landmark (optional)"
+                  className="w-full px-4 py-2.5 text-sm bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-agri-green/25 focus:border-agri-green outline-none"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Payment & Action */}
         <div className="lg:col-span-1">
           <div className="bg-white p-8 rounded-3xl shadow-xl border border-gray-100 sticky top-24">
@@ -204,6 +363,53 @@ const Checkout = () => {
               Payment
             </h3>
             
+            {/* Payment Method Selection */}
+            <div className="mb-6">
+              <p className="text-sm font-bold text-gray-700 mb-3">Payment Method *</p>
+              <div className="space-y-3">
+                <label
+                  className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                    paymentMethod === 'COD'
+                      ? 'border-agri-green bg-green-50'
+                      : 'border-gray-200 bg-white hover:border-gray-300'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="COD"
+                    checked={paymentMethod === 'COD'}
+                    onChange={() => handlePaymentMethodChange('COD')}
+                    className="accent-agri-green w-4 h-4"
+                  />
+                  <div>
+                    <p className="text-sm font-bold text-gray-800">Cash on Delivery (COD)</p>
+                    <p className="text-xs text-gray-500">Pay when you receive</p>
+                  </div>
+                </label>
+                <label
+                  className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                    paymentMethod === 'UPI'
+                      ? 'border-agri-green bg-green-50'
+                      : 'border-gray-200 bg-white hover:border-gray-300'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="UPI"
+                    checked={paymentMethod === 'UPI'}
+                    onChange={() => handlePaymentMethodChange('UPI')}
+                    className="accent-agri-green w-4 h-4"
+                  />
+                  <div>
+                    <p className="text-sm font-bold text-gray-800">UPI / Razorpay</p>
+                    <p className="text-xs text-gray-500">Pay online via UPI, card, or net banking</p>
+                  </div>
+                </label>
+              </div>
+            </div>
+
             <div className="space-y-4 mb-8">
               <div className="flex justify-between text-gray-600">
                 <span>Subtotal</span>
@@ -221,9 +427,9 @@ const Checkout = () => {
 
             <button
               onClick={handlePayment}
-              disabled={cart.length === 0 || isProcessing}
+              disabled={cart.length === 0 || isProcessing || !paymentMethod}
               className={`w-full py-4 rounded-xl font-black shadow-lg transition-all active:scale-[0.98] ${
-                cart.length === 0 || isProcessing
+                cart.length === 0 || isProcessing || !paymentMethod
                   ? 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none' 
                   : 'bg-agri-green text-white hover:bg-green-700'
               }`}
@@ -232,7 +438,9 @@ const Checkout = () => {
             </button>
             
             <p className="text-center text-[10px] text-gray-400 mt-6 uppercase tracking-widest font-bold">
-              Secure Checkout • Razorpay Payment
+              {paymentMethod === 'COD'
+                ? 'Pay on Delivery • No online payment needed'
+                : 'Secure Checkout • Razorpay Payment'}
             </p>
           </div>
         </div>

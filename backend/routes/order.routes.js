@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
   createOrder,
+  getAllOrders,
   getOrderById,
   getUserOrders,
   updateOrderStatus,
@@ -10,6 +11,7 @@ import { protect, restrictTo } from '../middleware/auth.middleware.js';
 const router = Router();
 
 router.post('/', protect, createOrder);
+router.get('/', protect, restrictTo('admin'), getAllOrders);
 router.get('/my', protect, getUserOrders);
 router.get('/:id', protect, getOrderById);
 router.put('/:id', protect, restrictTo('admin'), updateOrderStatus);

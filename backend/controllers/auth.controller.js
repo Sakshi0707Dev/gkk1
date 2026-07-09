@@ -15,14 +15,18 @@ import { verifyGoogleToken } from '../services/google.service.js';
 import { ENV } from '../config/env.js';
 import { isAdminEmail, ensureAdminRole, resolveRoleForEmail } from '../utils/admin.utils.js';
 
-const sendTokenResponse = (res, user, statusCode = 200) => {
+const sendTokenResponse = async (res, user, statusCode = 200) => {
   const { accessToken, refreshToken } = issueTokenPair(user);
 
-  User.findByIdAndUpdate(
-    user._id,
-    { $push: { refreshTokens: refreshToken } },
-    { new: true }
-  ).exec();
+  try {
+    await User.findByIdAndUpdate(
+      user._id,
+      { $push: { refreshTokens: refreshToken } },
+      { new: true }
+    );
+  } catch (err) {
+    console.error('[AUTH] Failed to store refresh token:', err.message);
+  }
 
   setRefreshCookie(res, refreshToken);
 
@@ -63,7 +67,7 @@ export const register = asyncHandler(async (req, res) => {
 
   sendWelcomeEmail({ to: user.email, name: user.name }).catch(() => {});
 
-  sendTokenResponse(res, user, 201);
+  await sendTokenResponse(res, user, 201);
 });
 
 export const login = asyncHandler(async (req, res) => {
@@ -111,7 +115,7 @@ export const login = asyncHandler(async (req, res) => {
   console.log('[AUTH] 4. Result of isAdminEmail:', isAdminEmail(email));
   console.log('[AUTH] === END LOGIN FLOW TRACE ===');
   console.log('===========================================================');
-  sendTokenResponse(res, user);
+  await sendTokenResponse(res, user);
 });
 
 export const googleAuth = asyncHandler(async (req, res) => {
@@ -152,7 +156,7 @@ export const googleAuth = asyncHandler(async (req, res) => {
   }
 
   console.log('[AUTH] Google login success:', user.email);
-  sendTokenResponse(res, user);
+  await sendTokenResponse(res, user);
 });
 
 export const getMe = asyncHandler(async (req, res) => {
@@ -189,29 +193,35 @@ export const refreshToken = asyncHandler(async (req, res) => {
     throw new AppError('Invalid or expired refresh token. Please log in again.', 401);
   }
 
-  const user = await User.findById(decoded.id).select('+refreshTokens');
+  const user = await User.findById(decoded.id);
   if (!user) throw new AppError('User no longer exists.', 401);
 
-  if (!user.refreshTokens.includes(token)) {
-    await User.findByIdAndUpdate(decoded.id, { $set: { refreshTokens: [] } });
-    clearRefreshCookie(res);
-    throw new AppError('Refresh token reuse detected. All sessions revoked. Please log in again.', 401);
-  }
-
-  user.refreshTokens = user.refreshTokens.filter((t) => t !== token);
   console.log('[AUTH] *** refreshToken: role before ensureAdminRole:', user.role);
   await ensureAdminRole(user);
   console.log('[AUTH] *** refreshToken: role after ensureAdminRole:', user.role);
+
   const { accessToken, refreshToken: newRefreshToken } = issueTokenPair(user);
-  user.refreshTokens.push(newRefreshToken);
-  await user.save();
+
+  const updatedUser = await User.findOneAndUpdate(
+    { _id: user._id, refreshTokens: token },
+    {
+      $pull: { refreshTokens: token },
+      $push: { refreshTokens: newRefreshToken },
+    },
+    { new: true, select: '+refreshTokens' }
+  );
+
+  if (!updatedUser) {
+    clearRefreshCookie(res);
+    throw new AppError('Session expired. Please log in again.', 401);
+  }
 
   setRefreshCookie(res, newRefreshToken);
 
   res.json({
     success: true,
     message: 'Token refreshed successfully.',
-    data: { accessToken, user: user.toPublic() },
+    data: { accessToken, user: updatedUser.toPublic() },
   });
 });
 

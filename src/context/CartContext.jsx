@@ -56,15 +56,16 @@ export const CartProvider = ({ children }) => {
 
   const decreaseQuantity = (id) => {
     setCart((prevCart) =>
-      prevCart.map((item) => {
+      prevCart.reduce((acc, item) => {
         if (item.id === id) {
           if (item.quantity > 1) {
-            return { ...item, quantity: item.quantity - 1 };
+            acc.push({ ...item, quantity: item.quantity - 1 });
           }
-          return null;
+          return acc;
         }
-        return item;
-      }).filter(Boolean)
+        acc.push(item);
+        return acc;
+      }, [])
     );
   };
 

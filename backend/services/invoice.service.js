@@ -209,7 +209,7 @@ class InvoiceService {
   }
 
   async getInvoiceById(invoiceId) {
-    return Invoice.findById(invoiceId).populate('orderId');
+    return Invoice.findById(invoiceId).populate('orderId').lean();
   }
 
   async getInvoiceByOrderId(orderId) {
@@ -217,7 +217,7 @@ class InvoiceService {
   }
 
   async getUserInvoices(userId) {
-    return Invoice.find({ userId }).sort({ createdAt: -1 });
+    return Invoice.find({ userId }).sort({ createdAt: -1 }).lean();
   }
 
   async getAllInvoices(options = {}) {
@@ -229,7 +229,8 @@ class InvoiceService {
       .populate('userId', 'name email')
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
-      .limit(limit);
+      .limit(limit)
+      .lean();
 
     const total = await Invoice.countDocuments(query);
 

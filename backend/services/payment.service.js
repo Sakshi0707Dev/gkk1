@@ -21,6 +21,10 @@ export const createRazorpayOrderService = async ({ orderId, user }) => {
   const order = await Order.findById(orderId);
   if (!order) throw new AppError('Order not found.', 404);
 
+  if (order.paymentMethod === 'COD') {
+    throw new AppError('Cannot process Razorpay payment for COD orders.', 400);
+  }
+
   const isOwner = String(order.userId) === String(user._id);
   const isAdmin = user.role === 'admin';
   if (!isOwner && !isAdmin) {
@@ -75,6 +79,7 @@ export const verifyPaymentService = async ({
 
   if (isSignatureValid) {
     order.paymentStatus = 'paid';
+    order.paymentMethod = 'UPI';
     order.orderStatus = 'confirmed';
     order.statusHistory.push({ status: 'confirmed' });
   } else {

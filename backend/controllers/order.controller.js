@@ -1,23 +1,24 @@
 import { AppError, asyncHandler } from '../utils/asyncHandler.js';
 import {
   createOrderService,
+  getAllOrdersService,
   getOrderByIdService,
   getUserOrdersService,
   updateOrderStatusService,
 } from '../services/order.service.js';
 
 export const createOrder = asyncHandler(async (req, res) => {
-  const { items, totalAmount, address } = req.body;
+  const { items, address, paymentMethod } = req.body;
 
-  if (!items || !totalAmount || !address) {
-    throw new AppError('items, totalAmount, and address are required.', 400);
+  if (!items || !address) {
+    throw new AppError('items and address are required.', 400);
   }
 
   const order = await createOrderService({
     userId: req.user._id,
     items,
-    totalAmount,
     address,
+    paymentMethod,
   });
 
   res.status(201).json({
@@ -29,6 +30,16 @@ export const createOrder = asyncHandler(async (req, res) => {
 
 export const getUserOrders = asyncHandler(async (req, res) => {
   const orders = await getUserOrdersService(req.user._id);
+
+  res.json({
+    success: true,
+    message: 'Orders retrieved successfully.',
+    data: { orders },
+  });
+});
+
+export const getAllOrders = asyncHandler(async (req, res) => {
+  const orders = await getAllOrdersService();
 
   res.json({
     success: true,

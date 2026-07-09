@@ -15,42 +15,61 @@ import Product from '../models/product.model.js';
 import Invoice from '../models/invoice.model.js';
 
 export const adminLogin = asyncHandler(async (req, res) => {
-  const { email, password } = req.body;
+  try {
+    const { email, password } = req.body;
 
-  if (!email || !password) {
-    throw new AppError('Email and password are required.', 400);
-  }
+    console.log('[DEBUG adminLogin] req.body:', JSON.stringify(req.body));
+    console.log('[DEBUG adminLogin] email from body:', email);
+    console.log('[DEBUG adminLogin] ENV.ADMIN_EMAIL:', ENV.ADMIN_EMAIL);
+    console.log('[DEBUG adminLogin] ENV.ADMIN_PASSWORD_HASH exists:', !!ENV.ADMIN_PASSWORD_HASH);
+    console.log('[DEBUG adminLogin] ENV.ADMIN_JWT_SECRET exists:', !!ENV.ADMIN_JWT_SECRET);
 
-  const normalizedEmail = String(email).trim().toLowerCase();
-  const configuredEmail = ENV.ADMIN_EMAIL.toLowerCase();
+    if (!email || !password) {
+      throw new AppError('Email and password are required.', 400);
+    }
 
-  if (normalizedEmail !== configuredEmail) {
-    throw new AppError('Invalid admin credentials.', 401);
-  }
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const configuredEmail = ENV.ADMIN_EMAIL.toLowerCase();
 
-  if (!ENV.ADMIN_PASSWORD_HASH) {
-    throw new AppError('Admin password not configured on server.', 500);
-  }
+    console.log('[DEBUG adminLogin] normalizedEmail:', normalizedEmail);
+    console.log('[DEBUG adminLogin] configuredEmail:', configuredEmail);
 
-  const isValid = await bcrypt.compare(password, ENV.ADMIN_PASSWORD_HASH);
-  if (!isValid) {
-    throw new AppError('Invalid admin credentials.', 401);
-  }
+    if (normalizedEmail !== configuredEmail) {
+      throw new AppError('Invalid admin credentials.', 401);
+    }
 
-  const token = issueAdminToken();
+    if (!ENV.ADMIN_PASSWORD_HASH) {
+      throw new AppError('Admin password not configured on server.', 500);
+    }
 
-  res.json({
-    success: true,
-    message: 'Admin logged in successfully.',
-    data: {
-      token,
-      admin: {
-        id: 'admin',
-        email: ENV.ADMIN_EMAIL,
-        role: 'admin',
+    const isValid = await bcrypt.compare(password, ENV.ADMIN_PASSWORD_HASH);
+    console.log('[DEBUG adminLogin] bcrypt.compare result:', isValid);
+
+    if (!isValid) {
+      throw new AppError('Invalid admin credentials.', 401);
+    }
+
+    console.log('[DEBUG adminLogin] before issueAdminToken()');
+    const token = issueAdminToken();
+
+    console.log('[DEBUG adminLogin] before sending success response');
+    res.json({
+      success: true,
+      message: 'Admin logged in successfully.',
+      data: {
+        token,
+        admin: {
+          id: 'admin',
+          email: ENV.ADMIN_EMAIL,
+          role: 'admin',
+        },
       },
-    },
-  });
+    });
+  } catch (err) {
+    console.error('[DEBUG adminLogin] Error:', err);
+    console.error('[DEBUG adminLogin] Stack:', err.stack);
+    throw err;
+  }
 });
 
 export const adminGetMe = asyncHandler(async (req, res) => {

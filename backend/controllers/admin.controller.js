@@ -16,43 +16,50 @@ import Invoice from '../models/invoice.model.js';
 
 export const adminLogin = asyncHandler(async (req, res) => {
   try {
-    const { email, password } = req.body;
+    console.log("========== ADMIN LOGIN ==========");
+    console.log("Request body:", req.body);
 
-    console.log('[DEBUG adminLogin] req.body:', JSON.stringify(req.body));
-    console.log('[DEBUG adminLogin] email from body:', email);
-    console.log('[DEBUG adminLogin] ENV.ADMIN_EMAIL:', ENV.ADMIN_EMAIL);
-    console.log('[DEBUG adminLogin] ENV.ADMIN_PASSWORD_HASH exists:', !!ENV.ADMIN_PASSWORD_HASH);
-    console.log('[DEBUG adminLogin] ENV.ADMIN_JWT_SECRET exists:', !!ENV.ADMIN_JWT_SECRET);
+    const normalizedEmail = (req.body.email || "").trim().toLowerCase();
+    const configuredEmail = (ENV.ADMIN_EMAIL || "").trim().toLowerCase();
 
-    if (!email || !password) {
-      throw new AppError('Email and password are required.', 400);
+    console.log("Normalized email:", normalizedEmail);
+    console.log("Configured email:", configuredEmail);
+    console.log("ADMIN_EMAIL exists:", !!ENV.ADMIN_EMAIL);
+    console.log("ADMIN_PASSWORD_HASH exists:", !!ENV.ADMIN_PASSWORD_HASH);
+    console.log("ADMIN_JWT_SECRET exists:", !!ENV.ADMIN_JWT_SECRET);
+    console.log("Email match:", normalizedEmail === configuredEmail);
+
+    if (!req.body.email || !req.body.password) {
+      console.log("Returning 401 because: email or password missing");
+      throw new AppError('Invalid admin credentials.', 401);
     }
 
-    const normalizedEmail = String(email).trim().toLowerCase();
-    const configuredEmail = ENV.ADMIN_EMAIL.toLowerCase();
-
-    console.log('[DEBUG adminLogin] normalizedEmail:', normalizedEmail);
-    console.log('[DEBUG adminLogin] configuredEmail:', configuredEmail);
-
     if (normalizedEmail !== configuredEmail) {
+      console.log("Returning 401 because: email mismatch");
       throw new AppError('Invalid admin credentials.', 401);
     }
 
     if (!ENV.ADMIN_PASSWORD_HASH) {
+      console.log("Returning 500 because: ADMIN_PASSWORD_HASH not configured");
       throw new AppError('Admin password not configured on server.', 500);
     }
 
-    const isValid = await bcrypt.compare(password, ENV.ADMIN_PASSWORD_HASH);
-    console.log('[DEBUG adminLogin] bcrypt.compare result:', isValid);
+    const passwordMatches = await bcrypt.compare(
+      req.body.password,
+      ENV.ADMIN_PASSWORD_HASH
+    );
+    console.log("Password match:", passwordMatches);
 
-    if (!isValid) {
+    if (!passwordMatches) {
+      console.log("Returning 401 because: password mismatch");
       throw new AppError('Invalid admin credentials.', 401);
     }
 
-    console.log('[DEBUG adminLogin] before issueAdminToken()');
+    console.log("Generating admin JWT");
     const token = issueAdminToken();
+    console.log("JWT generated successfully");
 
-    console.log('[DEBUG adminLogin] before sending success response');
+    console.log("Admin login success");
     res.json({
       success: true,
       message: 'Admin logged in successfully.',
@@ -66,8 +73,9 @@ export const adminLogin = asyncHandler(async (req, res) => {
       },
     });
   } catch (err) {
-    console.error('[DEBUG adminLogin] Error:', err);
-    console.error('[DEBUG adminLogin] Stack:', err.stack);
+    console.error("ADMIN LOGIN ERROR");
+    console.error(err);
+    console.error(err.stack);
     throw err;
   }
 });

@@ -31,17 +31,20 @@ export const adminLogin = asyncHandler(async (req, res) => {
 
     if (!req.body.email || !req.body.password) {
       console.log("Returning 401 because: email or password missing");
-      throw new AppError('Invalid admin credentials.', 401);
+      throw new AppError('DEBUG: Missing email or password', 401);
     }
 
     if (normalizedEmail !== configuredEmail) {
       console.log("Returning 401 because: email mismatch");
-      throw new AppError('Invalid admin credentials.', 401);
+      throw new AppError(
+        `DEBUG: Email mismatch (received="${normalizedEmail}", expected="${configuredEmail}")`,
+        401
+      );
     }
 
     if (!ENV.ADMIN_PASSWORD_HASH) {
       console.log("Returning 500 because: ADMIN_PASSWORD_HASH not configured");
-      throw new AppError('Admin password not configured on server.', 500);
+      throw new AppError('DEBUG: ADMIN_PASSWORD_HASH missing', 500);
     }
 
     const passwordMatches = await bcrypt.compare(
@@ -52,7 +55,7 @@ export const adminLogin = asyncHandler(async (req, res) => {
 
     if (!passwordMatches) {
       console.log("Returning 401 because: password mismatch");
-      throw new AppError('Invalid admin credentials.', 401);
+      throw new AppError('DEBUG: Password mismatch', 401);
     }
 
     console.log("Generating admin JWT");

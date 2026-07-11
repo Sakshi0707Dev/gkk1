@@ -8,11 +8,13 @@ cloudinary.config({
   api_secret: ENV.CLOUDINARY_API_SECRET,
 });
 
-console.log("Cloudinary config:");
-console.log("Cloud name:", ENV.CLOUDINARY_CLOUD_NAME);
-console.log("API key starts with:", ENV.CLOUDINARY_API_KEY?.slice(0, 6));
-console.log("API secret length:", ENV.CLOUDINARY_API_SECRET?.length);
-console.log(cloudinary.config());
+console.log('[CLOUDINARY DEBUG]', {
+  cloud_name: ENV.CLOUDINARY_CLOUD_NAME,
+  api_key: ENV.CLOUDINARY_API_KEY,
+  secret_length: ENV.CLOUDINARY_API_SECRET?.length,
+  secret_trimmed_length: ENV.CLOUDINARY_API_SECRET?.trim().length,
+  has_whitespace: ENV.CLOUDINARY_API_SECRET !== ENV.CLOUDINARY_API_SECRET?.trim(),
+});
 
 const storage = new CloudinaryStorage({
   cloudinary,

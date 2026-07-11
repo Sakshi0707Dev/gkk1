@@ -2,6 +2,8 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import adminApi from '../../utils/adminApi';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'https://gkk1.onrender.com';
+console.log('[Products.jsx] import.meta.env.VITE_API_URL:', import.meta.env.VITE_API_URL);
+console.log('[Products.jsx] API_BASE resolved:', API_BASE);
 
 const CATEGORIES = [];
 const SUBCATEGORIES = {};
@@ -162,9 +164,11 @@ const ProductModal = ({ product, onSave, onClose }) => {
       const config = { headers: { 'Content-Type': 'multipart/form-data' } };
 
       if (isEditing) {
+        console.log('[Products.jsx] Sending PUT to:', adminApi.defaults.baseURL + `/products/${product._id}`);
         const res = await adminApi.put(`/products/${product._id}`, fd, config);
         onSave(res.data?.data?.product);
       } else {
+        console.log('[Products.jsx] Sending POST to:', adminApi.defaults.baseURL + '/products');
         const res = await adminApi.post('/products', fd, config);
         onSave(res.data?.data?.product);
       }

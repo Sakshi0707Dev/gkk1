@@ -1,10 +1,7 @@
 import bcrypt from 'bcryptjs';
-import fs from 'fs';
-import path from 'path';
 import { ENV } from '../config/env.js';
 import { AppError, asyncHandler } from '../utils/asyncHandler.js';
 import { issueAdminToken } from '../utils/admin.jwt.utils.js';
-import { UPLOADS_DIR } from '../utils/upload.js';
 
 import {
   getAllOrdersService,
@@ -195,7 +192,7 @@ export const adminCreateProduct = asyncHandler(async (req, res) => {
 
   let images = [];
   if (req.files && req.files.length > 0) {
-    images = req.files.map((f) => `/uploads/products/${f.filename}`);
+    images = req.files.map((f) => f.path);
   }
 
   const product = await Product.create({
@@ -291,16 +288,11 @@ export const adminUpdateProduct = asyncHandler(async (req, res) => {
 
   if (fields.removedImages) {
     const toRemove = Array.isArray(fields.removedImages) ? fields.removedImages : [fields.removedImages];
-    for (const imgPath of toRemove) {
-      const filename = path.basename(imgPath);
-      const fullPath = path.join(UPLOADS_DIR, filename);
-      try { fs.unlinkSync(fullPath); } catch {}
-    }
     currentImages = currentImages.filter((img) => !toRemove.includes(img));
   }
 
   if (req.files && req.files.length > 0) {
-    const newImages = req.files.map((f) => `/uploads/products/${f.filename}`);
+    const newImages = req.files.map((f) => f.path);
     currentImages = [...currentImages, ...newImages];
   }
 
@@ -315,16 +307,6 @@ export const adminUpdateProduct = asyncHandler(async (req, res) => {
 export const adminDeleteProduct = asyncHandler(async (req, res) => {
   const product = await Product.findByIdAndDelete(req.params.id);
   if (!product) throw new AppError('Product not found.', 404);
-
-  const allImages = [...(product.images || [])];
-  if (product.image && !allImages.includes(product.image)) {
-    allImages.push(product.image);
-  }
-  for (const imgPath of allImages) {
-    const filename = path.basename(imgPath);
-    const fullPath = path.join(UPLOADS_DIR, filename);
-    try { fs.unlinkSync(fullPath); } catch {}
-  }
 
   res.json({ success: true, message: 'Product deleted.', data: { product } });
 });

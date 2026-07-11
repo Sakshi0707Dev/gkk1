@@ -1,8 +1,5 @@
-import fs from 'fs';
-import path from 'path';
 import Product from '../models/product.model.js';
 import { AppError, asyncHandler } from '../utils/asyncHandler.js';
-import { UPLOADS_DIR } from '../utils/upload.js';
 
 function parseStrArr(val) {
   if (!val) return undefined;
@@ -94,7 +91,7 @@ export const createProduct = asyncHandler(async (req, res) => {
 
   let images = [];
   if (req.files && req.files.length > 0) {
-    images = req.files.map((f) => `/uploads/products/${f.filename}`);
+    images = req.files.map((f) => f.path);
   }
 
   const product = await Product.create({
@@ -200,16 +197,11 @@ export const updateProduct = asyncHandler(async (req, res) => {
 
   if (fields.removedImages) {
     const toRemove = Array.isArray(fields.removedImages) ? fields.removedImages : [fields.removedImages];
-    for (const imgPath of toRemove) {
-      const filename = path.basename(imgPath);
-      const fullPath = path.join(UPLOADS_DIR, filename);
-      try { fs.unlinkSync(fullPath); } catch {}
-    }
     currentImages = currentImages.filter((img) => !toRemove.includes(img));
   }
 
   if (req.files && req.files.length > 0) {
-    const newImages = req.files.map((f) => `/uploads/products/${f.filename}`);
+    const newImages = req.files.map((f) => f.path);
     currentImages = [...currentImages, ...newImages];
   }
 
@@ -228,16 +220,6 @@ export const updateProduct = asyncHandler(async (req, res) => {
 export const deleteProduct = asyncHandler(async (req, res) => {
   const product = await Product.findByIdAndDelete(req.params.id);
   if (!product) throw new AppError('Product not found.', 404);
-
-  const allImages = [...(product.images || [])];
-  if (product.image && !allImages.includes(product.image)) {
-    allImages.push(product.image);
-  }
-  for (const imgPath of allImages) {
-    const filename = path.basename(imgPath);
-    const fullPath = path.join(UPLOADS_DIR, filename);
-    try { fs.unlinkSync(fullPath); } catch {}
-  }
 
   res.json({
     success: true,

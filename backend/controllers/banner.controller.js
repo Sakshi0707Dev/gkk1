@@ -1,11 +1,5 @@
 import Banner from '../models/banner.model.js';
 import { AppError, asyncHandler } from '../utils/asyncHandler.js';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 export const getActiveBanners = asyncHandler(async (_req, res) => {
   const banners = await Banner.find({ active: true }).sort({ order: 1 }).lean();
@@ -26,7 +20,7 @@ export const adminCreateBanner = asyncHandler(async (req, res) => {
 
   let image = '';
   if (req.file) {
-    image = `/uploads/products/${req.file.filename}`;
+    image = req.file.path;
   }
 
   const banner = await Banner.create({
@@ -59,21 +53,11 @@ export const adminUpdateBanner = asyncHandler(async (req, res) => {
   if (order !== undefined) banner.order = Number(order);
 
   if (removeImage === 'true' || removeImage === true) {
-    if (banner.image) {
-      const uploadsDir = path.join(__dirname, '../../uploads/products');
-      const filename = path.basename(banner.image);
-      try { fs.unlinkSync(path.join(uploadsDir, filename)); } catch {}
-    }
     banner.image = '';
   }
 
   if (req.file) {
-    if (banner.image) {
-      const uploadsDir = path.join(__dirname, '../../uploads/products');
-      const filename = path.basename(banner.image);
-      try { fs.unlinkSync(path.join(uploadsDir, filename)); } catch {}
-    }
-    banner.image = `/uploads/products/${req.file.filename}`;
+    banner.image = req.file.path;
   }
 
   await banner.save();
@@ -83,12 +67,6 @@ export const adminUpdateBanner = asyncHandler(async (req, res) => {
 export const adminDeleteBanner = asyncHandler(async (req, res) => {
   const banner = await Banner.findByIdAndDelete(req.params.id);
   if (!banner) throw new AppError('Banner not found.', 404);
-
-  if (banner.image) {
-    const uploadsDir = path.join(__dirname, '../../uploads/products');
-    const filename = path.basename(banner.image);
-    try { fs.unlinkSync(path.join(uploadsDir, filename)); } catch {}
-  }
 
   res.json({ success: true, message: 'Banner deleted.' });
 });

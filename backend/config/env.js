@@ -89,6 +89,11 @@ export const ENV = {
   // Invoice Automation
   AUTO_GENERATE_INVOICE: process.env.AUTO_GENERATE_INVOICE !== 'false',
 
+  // Cloudinary
+  CLOUDINARY_CLOUD_NAME:  process.env.CLOUDINARY_CLOUD_NAME || '',
+  CLOUDINARY_API_KEY:     process.env.CLOUDINARY_API_KEY || '',
+  CLOUDINARY_API_SECRET:  process.env.CLOUDINARY_API_SECRET || '',
+
   // Admin Configuration (existing — email-based role promotion)
   ADMIN_EMAILS: (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean),
 

@@ -12,12 +12,8 @@ const storage = new CloudinaryStorage({
   cloudinary,
   params: {
     folder: 'gkk/products',
-    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
     resource_type: 'image',
-    public_id: () => {
-      const randomStr = Math.random().toString(36).substring(2, 10);
-      return `${Date.now()}-${randomStr}`;
-    },
+    public_id: () => `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
   },
 });
 
